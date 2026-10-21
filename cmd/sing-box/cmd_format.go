@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/sagernet/sing-box/common/configcodec"
 	"github.com/sagernet/sing-box/log"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/json"
@@ -62,11 +63,17 @@ func format() error {
 		if bytes.Equal(optionsEntry.content, buffer.Bytes()) {
 			continue
 		}
+		// Preserve the on-disk form: a config that arrived encoded is written back
+		// encoded, so -w never silently turns an ENC1: file into plaintext.
+		outputContent := buffer.Bytes()
+		if optionsEntry.encoded {
+			outputContent = []byte(configcodec.Encode(buffer.String()))
+		}
 		output, err := os.Create(optionsEntry.path)
 		if err != nil {
 			return E.Cause(err, "open output")
 		}
-		_, err = output.Write(buffer.Bytes())
+		_, err = output.Write(outputContent)
 		output.Close()
 		if err != nil {
 			return E.Cause(err, "write output")

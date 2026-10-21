@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/sagernet/sing-box"
+	"github.com/sagernet/sing-box/common/configcodec"
+	"github.com/sagernet/sing-box/common/licensing"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
@@ -43,6 +45,10 @@ type OptionsEntry struct {
 	content []byte
 	path    string
 	options option.Options
+	// encoded records that the file on disk was in ENC1: form. content and options
+	// always hold the decoded config, so writers must re-encode to avoid silently
+	// replacing an encoded file with plaintext.
+	encoded bool
 }
 
 func readConfigAt(path string) (*OptionsEntry, error) {
@@ -58,6 +64,11 @@ func readConfigAt(path string) (*OptionsEntry, error) {
 	if err != nil {
 		return nil, E.Cause(err, "read config at ", path)
 	}
+	// Decode if encoded (ENC1: prefix), otherwise use as-is
+	encoded := configcodec.IsEncodedBytes(configContent)
+	if encoded {
+		configContent = []byte(configcodec.DecodeBytes(configContent))
+	}
 	options, err := json.UnmarshalExtendedContext[option.Options](globalCtx, configContent)
 	if err != nil {
 		return nil, E.Cause(err, "decode config at ", path)
@@ -66,6 +77,7 @@ func readConfigAt(path string) (*OptionsEntry, error) {
 		content: configContent,
 		path:    path,
 		options: options,
+		encoded: encoded,
 	}, nil
 }
 
@@ -177,6 +189,14 @@ func run() error {
 		return err
 	}
 	options, err := mergeOptionsList(optionsList)
+	if err != nil {
+		return err
+	}
+	// Licence gate, checked once per run before anything binds. A no-op while
+	// licensing.Enforce is false; see common/licensing.
+	licenseCtx, licenseCancel := context.WithTimeout(globalCtx, licensing.VerifyTimeout)
+	err = gateLicense(licenseCtx)
+	licenseCancel()
 	if err != nil {
 		return err
 	}

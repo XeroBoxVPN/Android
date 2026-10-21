@@ -9,6 +9,7 @@ import (
 
 	box "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/common/configcodec"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/dns"
 	"github.com/sagernet/sing-box/include"
@@ -40,7 +41,9 @@ func baseContext(platformInterface PlatformInterface) context.Context {
 }
 
 func parseConfig(ctx context.Context, configContent string) (option.Options, error) {
-	options, err := json.UnmarshalExtendedContext[option.Options](ctx, []byte(configContent))
+	// Decode if encrypted (ENC1: prefix), otherwise use as-is
+	decodedContent := configcodec.Decode(configContent)
+	options, err := json.UnmarshalExtendedContext[option.Options](ctx, []byte(decodedContent))
 	if err != nil {
 		return option.Options{}, E.Cause(err, "decode config")
 	}

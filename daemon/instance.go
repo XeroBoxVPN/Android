@@ -6,6 +6,7 @@ import (
 
 	"github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/common/configcodec"
 	"github.com/sagernet/sing-box/common/trafficcontrol"
 	"github.com/sagernet/sing-box/common/urltest"
 	C "github.com/sagernet/sing-box/constant"
@@ -209,7 +210,9 @@ func (i *Instance) TrafficManager() *trafficcontrol.Manager {
 }
 
 func parseConfig(ctx context.Context, configContent string) (option.Options, error) {
-	options, err := json.UnmarshalExtendedContext[option.Options](ctx, []byte(configContent))
+	// Accept ENC1: configs here too: this is the path that actually starts the VPN.
+	// Decode is a no-op on plain JSON.
+	options, err := json.UnmarshalExtendedContext[option.Options](ctx, []byte(configcodec.Decode(configContent)))
 	if err != nil {
 		return option.Options{}, E.Cause(err, "decode config")
 	}
