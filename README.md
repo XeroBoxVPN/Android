@@ -1,3 +1,5 @@
+> **xerobox-core**: a modified version of sing-box used as the engine of the XeroBox apps. Not affiliated with SagerNet. Changes and build steps: [NOTICE.md](NOTICE.md). The original README follows.
+
 # sing-box
 
 The universal proxy platform.
