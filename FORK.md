@@ -7,16 +7,17 @@ while still taking upstream fixes.
 
 ## 1. Make it your own repository
 
-The clone still points `origin` at SagerNet. Do this once (Git Bash, in this folder):
+Already done here: all XeroBox work is committed on the branch `main-xerobox`, and the
+SagerNet remote is renamed `upstream` (so fixes can still be fetched). What's left is
+pointing it at your own repository (Git Bash, in this folder):
 
 ```sh
-git checkout -b main-xerobox            # your branch; upstream's stays untouched
-git add -A
-git commit -m "XeroBox: branding, accounts, sync, billing"
-git remote rename origin upstream       # SagerNet stays available for updates
 git remote add origin https://github.com/<you>/xerobox-android.git   # your new, empty repo
 git push -u origin main-xerobox
 ```
+
+(For a fresh clone elsewhere: `git checkout -b main-xerobox`, commit, then
+`git remote rename origin upstream` before adding your own `origin`.)
 
 Create the new repository on GitHub (or Gitea, GitLab) first, empty, without a
 README. Make it **public, or give every user a way to get the source**: the app is
