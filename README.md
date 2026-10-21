@@ -128,8 +128,7 @@ The GitHub Actions workflows in `.github/workflows` do the same on every push.
 
 ## Release builds and signing
 
-See [SIGNING.md](SIGNING.md) to create the upload key and [the release guide](RELEASE.md) for
-Google Play. In short:
+See [SIGNING.md](SIGNING.md) to create the signing (upload) key. In short:
 
 1. Bump `VERSION_CODE` / `VERSION_NAME` in `version.properties`.
 2. `./gradlew bundlePlayRelease assembleOtherRelease`.

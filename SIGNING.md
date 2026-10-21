@@ -68,5 +68,5 @@ be blocked. Check the current country list and dates on developer.android.com be
 
 ## Never
 - Commit the `.jks` or the passwords, or send them by chat or email.
-- Use the upstream `release.keystore` in this folder. It isn't ours, and its passwords are unknown.
+- Use any key you didn't create yourself (the upstream project's test key was removed from this repository).
 - Sign customer builds with the debug key.

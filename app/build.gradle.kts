@@ -72,7 +72,7 @@ android {
     }
 
     defaultConfig {
-        // XeroBox's own package name (FORK.md): it installs next to the original app
+        // XeroBox's own package name (README): it installs next to the original app
         // instead of clashing with it. Override with XEROBOX_APP_ID in local.properties.
         // The Kotlin package (namespace) stays io.nekohasekai.sfa to keep upstream merges easy.
         applicationId = getProps("XEROBOX_APP_ID").trim().ifEmpty { "com.xerobox.vpn" }
@@ -85,8 +85,8 @@ android {
 
     signingConfigs {
         create("release") {
-            // Path from local.properties KEYSTORE_FILE (see SIGNING.md); default release.keystore.
-            storeFile = file(getProps("KEYSTORE_FILE").ifEmpty { "release.keystore" })
+            // Path from local.properties KEYSTORE_FILE (see SIGNING.md). Release builds need it.
+            storeFile = getProps("KEYSTORE_FILE").takeIf { it.isNotEmpty() }?.let { file(it) }
             storePassword = getProps("KEYSTORE_PASS")
             keyAlias = getProps("ALIAS_NAME")
             keyPassword = getProps("ALIAS_PASS")
