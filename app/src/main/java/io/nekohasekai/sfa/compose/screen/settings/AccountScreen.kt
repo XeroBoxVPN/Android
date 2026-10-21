@@ -354,6 +354,37 @@ private fun SignedInContent(state: PanelState) {
         }
     }
 
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    var deleteError by rememberSaveable { mutableStateOf<String?>(null) }
+    TextButton(
+        onClick = { confirmDelete = true },
+        enabled = !signingOut,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(stringResource(R.string.delete_account), color = MaterialTheme.colorScheme.error)
+    }
+    deleteError?.let { Text(text = it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.delete_account_title)) },
+            text = { Text(stringResource(R.string.delete_account_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    signingOut = true
+                    scope.launch {
+                        deleteError = PanelSync.deleteAccount()
+                        signingOut = false
+                    }
+                }) { Text(stringResource(R.string.delete_account_confirm), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.panel_cancel)) }
+            },
+        )
+    }
+
     if (confirmSignOut) {
         AlertDialog(
             onDismissRequest = { confirmSignOut = false },
@@ -412,10 +443,11 @@ private fun PlanCard(plan: PanelPlan) {
                 }
             }
             Text(
-                text = stringResource(R.string.plan_body),
+                text = stringResource(if (io.nekohasekai.sfa.BuildConfig.EXTERNAL_PURCHASE) R.string.plan_body else R.string.plan_status_only),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (!io.nekohasekai.sfa.BuildConfig.EXTERNAL_PURCHASE) return@Column // store build: no purchase outside the store
             error?.let {
                 Text(text = it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }

@@ -15,3 +15,11 @@ local.properties
 /.claude/
 *.jks
 *.keystore
+
+# XeroBox: build outputs and key material never belong in the repository
+*.apk
+*.aab
+*.bak
+*.p12
+*.pem
+keys/

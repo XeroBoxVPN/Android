@@ -130,10 +130,18 @@ android {
 
     flavorDimensions += "vendor"
     productFlavors {
-        create("play")
-        create("other")
+        // EXTERNAL_PURCHASE: the plan card may send users to buy outside the store (the Telegram
+        // bot). Google Play's payments policy does not allow that for digital subscriptions, so
+        // the Play build only shows the plan.
+        create("play") {
+            buildConfigField("boolean", "EXTERNAL_PURCHASE", "false")
+        }
+        create("other") {
+            buildConfigField("boolean", "EXTERNAL_PURCHASE", "true")
+        }
         create("otherLegacy") {
             minSdk = 21
+            buildConfigField("boolean", "EXTERNAL_PURCHASE", "true")
         }
     }
 
@@ -157,7 +165,7 @@ android {
             isEnable = true
             isUniversalApk = false
             reset()
-            include("arm64-v8a", "x86_64")
+            include("arm64-v8a", "armeabi-v7a", "x86_64") // 32-bit ARM: older and budget phones
         }
     }
 

@@ -1,0 +1,122 @@
+# Builds the VPN core from xerobox-core and the app. On every push: a debug APK (proves the
+# repository builds from scratch). On a tag v*: signed release APKs + the Play App Bundle,
+# attached to a GitHub release with SHA-256 checksums.
+#
+# Repository settings → Secrets and variables → Actions:
+#   variables: XEROBOX_SERVER_URL (https://api.example.com), XEROBOX_CORE_REPO (optional,
+#              default <owner>/xerobox-core), XEROBOX_CORE_REF (optional, default main-xerobox)
+#   secrets (release only): KEYSTORE_BASE64 (the upload .jks, base64), KEYSTORE_PASS,
+#              ALIAS_NAME, ALIAS_PASS
+name: build
+
+on:
+  push:
+    branches: [main-xerobox]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write # create releases on tags
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the app
+        uses: actions/checkout@v4
+        with:
+          path: app
+
+      - name: Check out the VPN core
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.XEROBOX_CORE_REPO || format('{0}/xerobox-core', github.repository_owner) }}
+          ref: ${{ vars.XEROBOX_CORE_REF || 'main-xerobox' }}
+          path: core
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+
+      - name: Install the NDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.0.13004108" > /dev/null
+
+      - name: Build libbox
+        working-directory: core
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.0.13004108
+        run: |
+          go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
+          go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          go run ./cmd/internal/build_libbox -target android
+          mkdir -p ../app/app/libs
+          cp libbox.aar ../app/app/libs/
+          cp libbox-legacy.aar ../app/app/libs/ 2>/dev/null || echo "no legacy core: the Android 5-6 flavour is skipped"
+
+      - name: Configure
+        working-directory: app
+        run: |
+          {
+            echo "sdk.dir=$ANDROID_HOME"
+            echo "XEROBOX_SERVER_URL=${{ vars.XEROBOX_SERVER_URL }}"
+            echo "XEROBOX_GITHUB_REPO=${{ github.repository }}"
+          } > local.properties
+
+      - name: Signing key (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          ALIAS_NAME: ${{ secrets.ALIAS_NAME }}
+          ALIAS_PASS: ${{ secrets.ALIAS_PASS }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          {
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/upload.jks"
+            echo "KEYSTORE_PASS=$KEYSTORE_PASS"
+            echo "ALIAS_NAME=$ALIAS_NAME"
+            echo "ALIAS_PASS=$ALIAS_PASS"
+          } >> local.properties
+
+      - name: Debug build
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        working-directory: app
+        run: ./gradlew --no-daemon assembleOtherDebug
+
+      - name: Release build
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: app
+        run: ./gradlew --no-daemon assembleOtherRelease bundlePlayRelease
+
+      - name: Collect outputs
+        run: |
+          mkdir out
+          find app/app/build/outputs -name "*.apk" -exec cp {} out/ \;
+          find app/app/build/outputs -name "*.aab" -exec cp {} out/ \;
+          cd out && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xerobox-android-${{ github.sha }}
+          path: out/
+          retention-days: 14
+
+      - name: GitHub release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # APKs and checksums are public; the .aab is for Play Console only and stays in the artifact.
+          gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" --title "XeroBox ${{ github.ref_name }}" \
+            --notes "Download the APK for your phone (arm64-v8a for most phones, armeabi-v7a for older ones). Verify with SHA256SUMS.txt." \
+            out/*.apk out/SHA256SUMS.txt

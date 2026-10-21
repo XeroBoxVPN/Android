@@ -30,7 +30,7 @@ weak key can be replaced while users keep updating. Do it only when needed.
 ## Step by step: our own key (option 1)
 1. **Choose the final package name first.** `io.nekohasekai.sfa` belongs to the upstream app and
    clashes with it, for example `com.xerobox.vpn`. The package name and the key together are the app's
-   identity, and neither can change after users install it. *(Your decision. Not changed yet.)*
+   identity, and neither can change after users install it. *(Set: `com.xerobox.vpn`, overridable with `XEROBOX_APP_ID`.)*
 2. **Create the key** (JDK 17 is already installed). Run it in a terminal, type the passwords yourself and **never paste them in chat**:
    ```bat
    "%LOCALAPPDATA%\AndroidBuildEnv\jdk-17\bin\keytool.exe" -genkeypair -v ^
@@ -46,15 +46,15 @@ weak key can be replaced while users keep updating. Do it only when needed.
    ALIAS_NAME=xerobox
    ALIAS_PASS=…
    ```
-   On a CI server, put the same lines base64-encoded in the `LOCAL_PROPERTIES` secret. The build
-   already reads it.
+   On GitHub Actions, store the `.jks` base64-encoded as the `KEYSTORE_BASE64` secret plus
+   `KEYSTORE_PASS`, `ALIAS_NAME` and `ALIAS_PASS` (see `.github/workflows/build.yml`).
    Once `KEYSTORE_PASS` is set, **debug builds are signed with the release key too**, so test builds
    and later releases upgrade over each other.
 4. **Build and check:**
    ```bash
    ./gradlew --console=plain assembleOtherRelease
    "$ANDROID_HOME/build-tools/37.0.0/apksigner.bat" verify --print-certs \
-     app/build/outputs/apk/other/release/SFA-*-arm64-v8a-release.apk
+     app/build/outputs/apk/other/release/XeroBox-*-arm64-v8a.apk
    ```
    Note the **SHA-256 certificate digest**. The update system (`UPDATE_PLAN.md`, phase 4) checks
    downloads against it, and it is what you register in the next step.

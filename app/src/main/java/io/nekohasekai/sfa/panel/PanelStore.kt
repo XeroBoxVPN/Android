@@ -1,9 +1,12 @@
 package io.nekohasekai.sfa.panel
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
+import android.provider.Settings
 import io.nekohasekai.sfa.Application
 import org.json.JSONObject
+import java.security.MessageDigest
 import java.util.UUID
 
 /**
@@ -60,6 +63,20 @@ object PanelStore {
             prefs.edit().putString(KEY_DEVICE_ID, id).apply()
             return id
         }
+
+    /**
+     * A hash of Android's per-app device id (ANDROID_ID), which stays the same when the app
+     * is reinstalled or its data is cleared, but differs between apps and is reset by a
+     * factory reset. The server uses it so a reinstall keeps its account and device slot
+     * instead of creating new ones. The raw id never leaves the phone. Empty if unavailable.
+     */
+    val hardwareId: String
+        @SuppressLint("HardwareIds")
+        get() = runCatching {
+            val raw = Settings.Secure.getString(Application.application.contentResolver, Settings.Secure.ANDROID_ID).orEmpty()
+            if (raw.isBlank()) "" else MessageDigest.getInstance("SHA-256")
+                .digest("xerobox-hw:$raw".toByteArray()).joinToString("") { "%02x".format(it) }
+        }.getOrDefault("")
 
     var lastSync: Long
         get() = prefs.getLong(KEY_LAST_SYNC, 0L)

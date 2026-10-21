@@ -143,6 +143,11 @@
     <string name="plan_renew">Renew or change plan</string>
     <string name="plan_body">Plans are bought and renewed in our Telegram bot. This button links your account to it.</string>
     <string name="plan_no_telegram">Telegram is not installed. Install it, then try again.</string>
+    <string name="plan_status_only">Your plan and its end date are shown here.</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_title">Delete your account?</string>
+    <string name="delete_account_body">Your account, login code, devices, data allowance and usage, invitation codes and Telegram link are deleted, and you lose access on all devices. Any remaining paid time is lost. This cannot be undone.</string>
+    <string name="delete_account_confirm">Delete permanently</string>
     <string name="traffic_exhausted">You have used all your data. Invite a friend or watch a rewarded ad to get more.</string>
     <string name="ad_watch_to_earn">Watch to earn %s</string>
     <string name="ad_reward_starting">Starting…</string>

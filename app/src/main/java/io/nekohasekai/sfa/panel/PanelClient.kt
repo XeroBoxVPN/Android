@@ -28,12 +28,14 @@ object PanelClient {
         serverUrl: String,
         code: String,
         deviceId: String,
+        hardwareId: String,
         deviceName: String,
         appVersion: String,
     ): PanelResult<LoginResponse> {
         val body = JSONObject()
             .put("code", code)
             .put("device_id", deviceId)
+            .put("hw_id", hardwareId)
             .put("device_name", deviceName)
             .put("platform", "android")
             .put("app_version", appVersion)
@@ -114,6 +116,14 @@ object PanelClient {
                 val url = result.value?.str("url").orEmpty()
                 if (url.startsWith("https://t.me/")) PanelResult.Success(url) else PanelResult.NetworkError("Empty response.")
             }
+            is PanelResult.ApiError -> result
+            is PanelResult.NetworkError -> result
+        }
+
+    /** Deletes the signed-in account and its data on the server (POST /api/v1/account/delete). */
+    suspend fun deleteAccount(serverUrl: String, token: String): PanelResult<Unit> =
+        when (val result = request(serverUrl, "/api/v1/account/delete", token, JSONObject().put("confirm", "DELETE"))) {
+            is PanelResult.Success -> PanelResult.Success(Unit)
             is PanelResult.ApiError -> result
             is PanelResult.NetworkError -> result
         }

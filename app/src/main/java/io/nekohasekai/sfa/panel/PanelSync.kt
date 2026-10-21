@@ -127,6 +127,7 @@ object PanelSync {
             serverUrl = server,
             code = normalized,
             deviceId = PanelStore.deviceId,
+            hardwareId = PanelStore.hardwareId,
             deviceName = deviceName(),
             appVersion = BuildConfig.VERSION_NAME,
         )
@@ -173,6 +174,22 @@ object PanelSync {
      * Refreshes only the data allowance, cheaply, so the dashboard can show usage within
      * seconds. Failures are ignored: the next full sync corrects everything.
      */
+    /** Deletes the account on the server, then signs out here. Returns an error message, or null. */
+    suspend fun deleteAccount(): String? {
+        val server = PanelStore.serverUrl
+        val token = PanelStore.token
+        if (server.isEmpty() || token.isEmpty()) return "Sign in first."
+        val result = withContext(Dispatchers.IO) { PanelClient.deleteAccount(server, token) }
+        return when (result) {
+            is PanelResult.Success -> {
+                signOut()
+                null
+            }
+            is PanelResult.ApiError -> result.message
+            is PanelResult.NetworkError -> "Can't reach the server: ${result.message}"
+        }
+    }
+
     /** The Telegram link for upgrading the plan, or an error message. */
     suspend fun telegramLink(): Pair<String?, String?> = withContext(Dispatchers.IO) {
         val server = PanelStore.serverUrl
