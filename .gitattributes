@@ -1,0 +1,5 @@
+# Keep Unix line endings for files run on Linux/macOS (CI, contributors), even from Windows.
+gradlew     text eol=lf
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.bat       text eol=crlf
