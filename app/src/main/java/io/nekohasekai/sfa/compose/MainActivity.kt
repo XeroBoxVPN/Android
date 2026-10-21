@@ -145,6 +145,17 @@ import io.nekohasekai.sfa.constant.Status
 import io.nekohasekai.sfa.database.Settings
 import io.nekohasekai.sfa.ktx.hasPermission
 import io.nekohasekai.sfa.ktx.launchCustomTab
+import io.nekohasekai.sfa.licensing.LicenseGate
+import io.nekohasekai.sfa.compose.component.XMark
+import io.nekohasekai.sfa.compose.screen.settings.SignInCard
+import io.nekohasekai.sfa.panel.PanelState
+import io.nekohasekai.sfa.panel.PanelSync
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import io.nekohasekai.sfa.update.UpdateState
 import io.nekohasekai.sfa.utils.RemoteControlManager
 import io.nekohasekai.sfa.vendor.Vendor
@@ -228,10 +239,13 @@ class MainActivity :
         }
         enableEdgeToEdge()
 
+        // Cache-only read so the UI can render the licence state immediately; the
+        // authoritative check runs in startService() before the VPN comes up.
+        LicenseGate.peekCached(this)
+
         lifecycleScope.launch {
             Settings.dataStore.initialize()
             connection.reconnect()
-            RemoteControlManager.restore()
 
             UpdateState.loadFromCache()
             if (Settings.checkUpdateEnabled) {
@@ -249,8 +263,38 @@ class MainActivity :
 
             setContent {
                 Theme {
-                    App()
+                    // XeroBox asks for a login or invitation code before anything else.
+                    val panel by PanelSync.state.collectAsState()
+                    if (panel.signedIn) {
+                        App()
+                    } else {
+                        FirstLaunchSignIn(panel)
+                    }
                 }
+            }
+        }
+    }
+
+    @Composable
+    private fun FirstLaunchSignIn(panel: PanelState) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+                .systemBarsPadding()
+                .imePadding(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                XMark(modifier = Modifier.size(88.dp))
+                SignInCard(panel, title = stringResource(R.string.panel_welcome_title))
             }
         }
     }
@@ -263,9 +307,6 @@ class MainActivity :
     private fun handleIntent(intent: Intent?) {
         if (intent == null) {
             return
-        }
-        if (intent.categories?.contains("de.robv.android.xposed.category.MODULE_SETTINGS") == true) {
-            pendingNavigationRoute.value = "settings/privilege"
         }
         val uri = intent.data ?: return
         if (uri.scheme == "sing-box") {
@@ -344,6 +385,17 @@ class MainActivity :
                 } else {
                     localNetworkPermissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
                 }
+                return@launch
+            }
+            // Panel: refresh configs if the last sync is stale. Capped at a few seconds and
+            // never blocks on a network failure; Connect proceeds with what is on disk.
+            runCatching { PanelSync.syncBeforeConnect() }
+            // License gate: verified last, after permissions, so the check runs only once the
+            // user could actually connect. Suspends on IO inside LicenseGate, and is a no-op
+            // while LicenseConfig.ENFORCE_LICENSING is false.
+            val denial = LicenseGate.denialOrNull(this@MainActivity)
+            if (denial != null) {
+                pendingIntentErrorMessage = denial
                 return@launch
             }
             startService0()
@@ -637,58 +689,14 @@ class MainActivity :
             )
         }
 
-        // Handle update check prompt dialog (shown only once on first launch)
-        var showUpdateCheckPrompt by remember { mutableStateOf(!Settings.updateCheckPrompted) }
-        if (showUpdateCheckPrompt) {
-            AlertDialog(
-                onDismissRequest = {
-                    Settings.updateCheckPrompted = true
-                    showUpdateCheckPrompt = false
-                },
-                title = { Text(stringResource(R.string.check_update)) },
-                text = {
-                    MarkdownText(
-                        markdown = stringResource(
-                            if (BuildConfig.FLAVOR == "play") {
-                                R.string.check_update_prompt_play
-                            } else {
-                                R.string.check_update_prompt_github
-                            },
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        Settings.updateCheckPrompted = true
-                        Settings.checkUpdateEnabled = true
-                        showUpdateCheckPrompt = false
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                val result = Vendor.checkUpdateAsync()
-                                UpdateState.setUpdate(result)
-                            } catch (_: Exception) {
-                                UpdateState.setUpdate(null)
-                            }
-                        }
-                    }) {
-                        Text(stringResource(R.string.ok))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        Settings.updateCheckPrompted = true
-                        showUpdateCheckPrompt = false
-                    }) {
-                        Text(stringResource(R.string.no_thanks))
-                    }
-                },
-            )
-        }
+        // No first-launch "check GitHub for updates?" prompt: XeroBox checks its own server
+        // automatically (Settings → App), with GitHub only as a silent fallback.
 
         // Handle update available dialog
         val updateInfo by UpdateState.updateInfo
-        val shouldShowUpdateDialog = updateInfo != null &&
+        // Releases found through the GitHub fallback are never announced at startup; they show
+        // only under Settings → App.
+        val shouldShowUpdateDialog = updateInfo != null && !updateInfo!!.fromGitHub &&
             updateInfo!!.versionCode > Settings.lastShownUpdateVersion
         var showUpdateDialog by remember { mutableStateOf(true) }
 
@@ -1588,6 +1596,7 @@ class MainActivity :
                 Alert.StartCommandServer -> stringResource(R.string.error_start_command_server)
                 Alert.CreateService -> stringResource(R.string.error_create_service)
                 Alert.StartService -> stringResource(R.string.error_start_service)
+                Alert.DataExhausted -> stringResource(R.string.quota_title)
                 else -> null
             }
 

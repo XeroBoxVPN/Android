@@ -72,21 +72,40 @@ android {
     }
 
     defaultConfig {
-        applicationId = "io.nekohasekai.sfa"
+        // XeroBox's own package name (FORK.md): it installs next to the original app
+        // instead of clashing with it. Override with XEROBOX_APP_ID in local.properties.
+        // The Kotlin package (namespace) stays io.nekohasekai.sfa to keep upstream merges easy.
+        applicationId = getProps("XEROBOX_APP_ID").trim().ifEmpty { "com.xerobox.vpn" }
         minSdk = 24
         targetSdk = 37
         versionCode = getVersionProps("VERSION_CODE").toInt()
         versionName = getVersionProps("VERSION_NAME")
-        base.archivesName.set("SFA-${versionName}")
+        base.archivesName.set("XeroBox-${versionName}")
     }
 
     signingConfigs {
         create("release") {
-            storeFile = file("release.keystore")
+            // Path from local.properties KEYSTORE_FILE (see SIGNING.md); default release.keystore.
+            storeFile = file(getProps("KEYSTORE_FILE").ifEmpty { "release.keystore" })
             storePassword = getProps("KEYSTORE_PASS")
             keyAlias = getProps("ALIAS_NAME")
             keyPassword = getProps("ALIAS_PASS")
         }
+    }
+
+    // XeroBox server built into the app (login, sync, invites, updates). Set the
+    // production https address as XEROBOX_SERVER_URL in local.properties; debug builds
+    // fall back to the emulator's view of a panel on this PC.
+    // XEROBOX_GITHUB_REPO (owner/repo) is the update fallback; empty = no fallback.
+    val serverUrl = getProps("XEROBOX_SERVER_URL").trim().trimEnd('/')
+    val githubRepo = getProps("XEROBOX_GITHUB_REPO").trim()
+    // Where users find this app's source code (GPL-3.0 requires offering it): your fork.
+    val sourceUrl = getProps("XEROBOX_SOURCE_URL").trim().ifEmpty {
+        if (githubRepo.isNotEmpty()) "https://github.com/$githubRepo" else "https://github.com/SagerNet/sing-box-for-android"
+    }
+    defaultConfig {
+        buildConfigField("String", "UPDATE_GITHUB_REPO", "\"$githubRepo\"")
+        buildConfigField("String", "SOURCE_URL", "\"$sourceUrl\"")
     }
 
     buildTypes {
@@ -94,8 +113,10 @@ android {
             if (getProps("KEYSTORE_PASS").isNotEmpty()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            buildConfigField("String", "SERVER_URL", "\"${serverUrl.ifEmpty { "http://10.0.2.2:8088" }}\"")
         }
         release {
+            buildConfigField("String", "SERVER_URL", "\"$serverUrl\"")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
@@ -134,9 +155,9 @@ android {
     splits {
         abi {
             isEnable = true
-            isUniversalApk = true
+            isUniversalApk = false
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            include("arm64-v8a", "x86_64")
         }
     }
 
@@ -188,6 +209,26 @@ dependencies {
     "playImplementation"(files("libs/libbox.aar"))
     "otherImplementation"(files("libs/libbox.aar"))
     "otherLegacyImplementation"(files("libs/libbox-legacy.aar"))
+
+    // Enterprise licensing library.
+    // Drop the vendor .jar/.aar into app/libs/ named license-*.jar / license-*.aar
+    // (or enterprise-*). The name filter keeps libbox.aar out of this set, and an
+    // empty match is not an error, so the project still builds before the lib lands.
+    implementation(
+        fileTree("libs") {
+            include("license-*.jar", "license-*.aar", "enterprise-*.jar", "enterprise-*.aar")
+        },
+    )
+    // If the library is published to a Maven repo instead, delete the fileTree above
+    // and declare the coordinate here (add the repo to settings.gradle.kts):
+    // implementation("com.yourvendor:licensing:1.2.3")
+
+    // Add-on libraries from other teams (see EXTENSIONS.md).
+    // Drop them into app/libs/ named ext-<name>.aar / ext-<name>.jar; nothing else to edit
+    // here. A local .aar does not bring its own dependencies: add those as implementation()
+    // lines below, or ask the team for a Maven coordinate instead:
+    // implementation("com.partner:analytics:1.0.0")
+    implementation(fileTree("libs") { include("ext-*.aar", "ext-*.jar") })
 
     // API level specific versions
     val lifecycleVersion24 = "2.11.0"

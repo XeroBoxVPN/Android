@@ -14,8 +14,11 @@ import java.io.Closeable
 
 class GitHubUpdateChecker : Closeable {
     companion object {
-        private const val RELEASES_URL = "https://api.github.com/repos/SagerNet/sing-box/releases"
-        private const val METADATA_FILENAME = "SFA-version-metadata.json"
+        // XeroBox releases: XEROBOX_GITHUB_REPO (owner/repo) at build time, see build.gradle.kts.
+        private val RELEASES_URL = "https://api.github.com/repos/${BuildConfig.UPDATE_GITHUB_REPO}/releases"
+
+        // Each release carries {"version_code": N, "version_name": "x.y.z"} in one of these.
+        private val METADATA_FILENAMES = setOf("XeroBox-version-metadata.json", "SFA-version-metadata.json")
     }
 
     private val client = Libbox.newHTTPClient().apply {
@@ -47,11 +50,14 @@ class GitHubUpdateChecker : Closeable {
         val metadata = selected.metadata
 
         val isLegacy = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
-        val apkAsset = release.assets.find { asset ->
+        val candidates = release.assets.filter { asset ->
             asset.name.endsWith(".apk") &&
                 !asset.name.contains("play") &&
                 asset.name.contains("legacy-android-5") == isLegacy
         }
+        // APKs are split per ABI: prefer the one built for this device.
+        val abi = Build.SUPPORTED_ABIS.firstOrNull().orEmpty()
+        val apkAsset = candidates.find { abi.isNotEmpty() && it.name.contains(abi) } ?: candidates.firstOrNull()
 
         return UpdateInfo(
             versionCode = metadata.versionCode,
@@ -103,7 +109,7 @@ class GitHubUpdateChecker : Closeable {
     }
 
     private fun downloadMetadata(release: GitHubRelease): VersionMetadata? {
-        val metadataAsset = release.assets.find { it.name == METADATA_FILENAME }
+        val metadataAsset = release.assets.find { it.name in METADATA_FILENAMES }
             ?: return null
 
         val request = client.newRequest()

@@ -17,6 +17,7 @@ import io.nekohasekai.sfa.ktx.long
 import io.nekohasekai.sfa.ktx.map
 import io.nekohasekai.sfa.ktx.string
 import io.nekohasekai.sfa.ktx.stringSet
+import io.nekohasekai.sfa.utils.ConfigCodec
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -42,7 +43,7 @@ object Settings {
     var startedByUser by dataStore.boolean(SettingsKey.STARTED_BY_USER)
 
     var updateSource by dataStore.string(SettingsKey.UPDATE_SOURCE) { "github" }
-    var checkUpdateEnabled by dataStore.boolean(SettingsKey.CHECK_UPDATE_ENABLED) { false }
+    var checkUpdateEnabled by dataStore.boolean(SettingsKey.CHECK_UPDATE_ENABLED) { true }
     var updateCheckPrompted by dataStore.boolean(SettingsKey.UPDATE_CHECK_PROMPTED) { false }
     var updateTrack by dataStore.string(SettingsKey.UPDATE_TRACK) {
         val versionName = BuildConfig.VERSION_NAME.lowercase()
@@ -159,7 +160,7 @@ object Settings {
         val selectedProfileId = selectedProfile
         if (selectedProfileId == -1L) return false
         val profile = ProfileManager.get(selectedProfile) ?: return false
-        val content = JSONObject(File(profile.typed.path).readText())
+        val content = JSONObject(ConfigCodec.decode(File(profile.typed.path).readText()))
         val inbounds = content.getJSONArray("inbounds")
         for (index in 0 until inbounds.length()) {
             val inbound = inbounds.getJSONObject(index)

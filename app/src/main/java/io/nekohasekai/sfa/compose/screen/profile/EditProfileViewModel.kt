@@ -13,6 +13,7 @@ import io.nekohasekai.sfa.database.Profile
 import io.nekohasekai.sfa.database.ProfileManager
 import io.nekohasekai.sfa.database.Settings
 import io.nekohasekai.sfa.database.TypedProfile
+import io.nekohasekai.sfa.utils.ConfigCodec
 import io.nekohasekai.sfa.utils.HTTPClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -254,8 +255,10 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
             try {
                 var selectedProfileUpdated = false
 
-                // Fetch remote config
-                val content = HTTPClient().use { it.getString(profile.typed.remoteURL) }
+                // Fetch remote config, decoding if the subscription serves the ENC1: form
+                val content = ConfigCodec.decode(
+                    HTTPClient().use { it.getString(profile.typed.remoteURL) },
+                )
                 Libbox.checkConfig(content)
 
                 // Check if content changed

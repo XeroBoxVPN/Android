@@ -13,6 +13,7 @@ import io.nekohasekai.sfa.Application
 import io.nekohasekai.sfa.database.ProfileManager
 import io.nekohasekai.sfa.database.Settings
 import io.nekohasekai.sfa.database.TypedProfile
+import io.nekohasekai.sfa.utils.ConfigCodec
 import io.nekohasekai.sfa.utils.HTTPClient
 import java.io.File
 import java.util.Date
@@ -75,7 +76,11 @@ class UpdateProfileWork {
                     continue
                 }
                 try {
-                    val content = HTTPClient().use { it.getString(profile.typed.remoteURL) }
+                    // Decoded if the subscription serves the ENC1: form, matching the
+                    // manual refresh in DashboardViewModel.updateProfile.
+                    val content = ConfigCodec.decode(
+                        HTTPClient().use { it.getString(profile.typed.remoteURL) },
+                    )
                     Libbox.checkConfig(content)
                     val file = File(profile.typed.path)
                     if (file.readText() != content) {

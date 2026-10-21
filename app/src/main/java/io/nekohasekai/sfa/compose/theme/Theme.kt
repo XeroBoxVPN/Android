@@ -10,30 +10,96 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme =
     darkColorScheme(
-        primary = SingBoxPrimary,
-        secondary = SingBoxPrimaryLight,
-        tertiary = LogBlue,
+        primary = XeroDarkPrimary,
+        onPrimary = XeroDarkOnPrimary,
+        primaryContainer = XeroDarkPrimaryContainer,
+        onPrimaryContainer = XeroDarkOnPrimaryContainer,
+        secondary = XeroDarkSecondary,
+        onSecondary = XeroDarkOnSecondary,
+        secondaryContainer = XeroDarkSecondaryContainer,
+        onSecondaryContainer = XeroDarkOnSecondaryContainer,
+        tertiary = XeroDarkTertiary,
+        onTertiary = XeroDarkOnTertiary,
+        tertiaryContainer = XeroDarkTertiaryContainer,
+        onTertiaryContainer = XeroDarkOnTertiaryContainer,
+        error = XeroDarkError,
+        onError = XeroDarkOnError,
+        errorContainer = XeroDarkErrorContainer,
+        onErrorContainer = XeroDarkOnErrorContainer,
+        background = XeroDarkBackground,
+        onBackground = XeroDarkOnSurface,
+        surface = XeroDarkSurface,
+        onSurface = XeroDarkOnSurface,
+        surfaceVariant = XeroDarkSurfaceVariant,
+        onSurfaceVariant = XeroDarkOnSurfaceVariant,
+        surfaceTint = XeroDarkPrimary,
+        outline = XeroDarkOutline,
+        outlineVariant = XeroDarkOutlineVariant,
+        surfaceContainerLowest = XeroDarkSurfaceContainerLowest,
+        surfaceContainerLow = XeroDarkSurfaceContainerLow,
+        surfaceContainer = XeroDarkSurfaceContainer,
+        surfaceContainerHigh = XeroDarkSurfaceContainerHigh,
+        surfaceContainerHighest = XeroDarkSurfaceContainerHighest,
+        surfaceBright = XeroDarkSurfaceContainerHighest,
+        surfaceDim = XeroDarkBackground,
     )
 
 private val LightColorScheme =
     lightColorScheme(
-        primary = SingBoxPrimary,
-        secondary = SingBoxPrimaryDark,
-        tertiary = LogBlue,
+        primary = XeroLightPrimary,
+        onPrimary = XeroLightOnPrimary,
+        primaryContainer = XeroLightPrimaryContainer,
+        onPrimaryContainer = XeroLightOnPrimaryContainer,
+        secondary = XeroLightSecondary,
+        onSecondary = XeroLightOnSecondary,
+        secondaryContainer = XeroLightSecondaryContainer,
+        onSecondaryContainer = XeroLightOnSecondaryContainer,
+        tertiary = XeroLightTertiary,
+        onTertiary = XeroLightOnTertiary,
+        tertiaryContainer = XeroLightTertiaryContainer,
+        onTertiaryContainer = XeroLightOnTertiaryContainer,
+        error = XeroLightError,
+        onError = XeroLightOnError,
+        errorContainer = XeroLightErrorContainer,
+        onErrorContainer = XeroLightOnErrorContainer,
+        background = XeroLightBackground,
+        onBackground = XeroLightOnSurface,
+        surface = XeroLightSurface,
+        onSurface = XeroLightOnSurface,
+        surfaceVariant = XeroLightSurfaceVariant,
+        onSurfaceVariant = XeroLightOnSurfaceVariant,
+        surfaceTint = XeroLightPrimary,
+        outline = XeroLightOutline,
+        outlineVariant = XeroLightOutlineVariant,
+        surfaceContainerLowest = XeroLightSurfaceContainerLowest,
+        surfaceContainerLow = XeroLightSurfaceContainerLow,
+        surfaceContainer = XeroLightSurfaceContainer,
+        surfaceContainerHigh = XeroLightSurfaceContainerHigh,
+        surfaceContainerHighest = XeroLightSurfaceContainerHighest,
+        surfaceBright = XeroLightSurfaceContainerLowest,
+        surfaceDim = XeroLightSurfaceContainerHighest,
     )
+
+/** Protection-state colours, which sit outside the Material roles. */
+data class ProtectionColors(val protected: Color, val unprotected: Color)
+
+val LocalProtectionColors =
+    staticCompositionLocalOf { ProtectionColors(protected = ProtectedDark, unprotected = UnprotectedDark) }
 
 @Composable
 fun Theme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Off by default so the XeroBox brand palette always shows. Wallpaper-based
+    // Material You colours (Android 12+) can be turned back on by passing true.
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme =
@@ -45,6 +111,12 @@ fun Theme(
 
             darkTheme -> DarkColorScheme
             else -> LightColorScheme
+        }
+    val protectionColors =
+        if (darkTheme) {
+            ProtectionColors(protected = ProtectedDark, unprotected = UnprotectedDark)
+        } else {
+            ProtectionColors(protected = ProtectedLight, unprotected = UnprotectedLight)
         }
 
     val view = LocalView.current
@@ -58,10 +130,12 @@ fun Theme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = Shapes,
-        content = content,
-    )
+    androidx.compose.runtime.CompositionLocalProvider(LocalProtectionColors provides protectionColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            shapes = Shapes,
+            content = content,
+        )
+    }
 }

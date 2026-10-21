@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Cable
+import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Route
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import io.nekohasekai.sfa.R
 import io.nekohasekai.sfa.compat.animateItemCompat
+import io.nekohasekai.sfa.config.AdConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +77,7 @@ fun DashboardSettingsBottomSheet(
     onReorderCards: (List<CardGroup>) -> Unit,
     onResetOrder: () -> Unit,
     onDismiss: () -> Unit,
+    adsAllowed: Boolean = AdConfig.hasAnyAd(),
 ) {
     var reorderedList by remember(cardOrder) { mutableStateOf(cardOrder) }
     var currentVisibleCards by remember(visibleCards) { mutableStateOf(visibleCards) }
@@ -156,8 +159,10 @@ fun DashboardSettingsBottomSheet(
                 )
                 TextButton(
                     onClick = {
+                        // Keep in step with DashboardViewModel.getDefaultItemOrder().
                         val defaultOrder =
                             listOfNotNull(
+                                CardGroup.Ad.takeIf { adsAllowed },
                                 CardGroup.UploadTraffic,
                                 CardGroup.DownloadTraffic,
                                 CardGroup.Debug,
@@ -168,6 +173,7 @@ fun DashboardSettingsBottomSheet(
                             )
                         val allCardsEnabled =
                             setOfNotNull(
+                                CardGroup.Ad,
                                 CardGroup.ClashMode,
                                 CardGroup.UploadTraffic,
                                 CardGroup.DownloadTraffic,
@@ -381,6 +387,7 @@ fun DashboardItemCard(
             Icon(
                 imageVector =
                 when (cardGroup) {
+                    CardGroup.Ad -> Icons.Outlined.Campaign
                     CardGroup.Debug -> Icons.Outlined.BugReport
                     CardGroup.Connections -> Icons.Outlined.Cable
                     CardGroup.UploadTraffic -> Icons.Outlined.Upload
@@ -412,6 +419,7 @@ fun DashboardItemCard(
                 Text(
                     text =
                     when (cardGroup) {
+                        CardGroup.Ad -> stringResource(R.string.ad_sponsored)
                         CardGroup.Debug -> stringResource(R.string.title_debug)
                         CardGroup.Connections -> stringResource(R.string.title_connections)
                         CardGroup.UploadTraffic -> stringResource(R.string.upload)

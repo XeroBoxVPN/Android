@@ -13,6 +13,8 @@ data class UpdateInfo(
     val releaseNotes: String?,
     val isPrerelease: Boolean,
     val fileSize: Long = 0,
+    // Found through the GitHub fallback rather than the XeroBox server: never announced at startup.
+    val fromGitHub: Boolean = false,
 ) {
     fun toJson(): String = Json.encodeToString(this)
 

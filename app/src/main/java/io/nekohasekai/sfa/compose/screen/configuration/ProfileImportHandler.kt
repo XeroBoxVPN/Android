@@ -9,6 +9,7 @@ import io.nekohasekai.sfa.R
 import io.nekohasekai.sfa.database.Profile
 import io.nekohasekai.sfa.database.ProfileManager
 import io.nekohasekai.sfa.database.TypedProfile
+import io.nekohasekai.sfa.utils.ConfigCodec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -44,15 +45,22 @@ class ProfileImportHandler(private val context: Context) {
 
     suspend fun importFromUri(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
         try {
-            val data =
+            val rawData =
                 context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     ?: return@withContext ImportResult.Error(context.getString(R.string.error_empty_file))
 
             // Get the filename from the URI
             val filename = getFileNameFromUri(uri)
 
+            // Decode if encoded (ENC1: prefix), otherwise use as-is.
+            // The raw bytes are kept for the binary ProfileContent path below: a
+            // String round-trip would mangle gzipped input, since UTF-8 decoding
+            // replaces invalid sequences and re-encoding cannot recover them.
+            val encoded = ConfigCodec.isEncoded(rawData)
+            val dataString = if (encoded) ConfigCodec.decode(rawData) else String(rawData)
+            val data = if (encoded) dataString.toByteArray() else rawData
+
             // Try to detect if it's a JSON configuration file
-            val dataString = String(data)
             if (isJsonConfiguration(dataString)) {
                 // It's a JSON configuration, import it directly as a local profile
                 return@withContext importJsonConfiguration(dataString, filename)
@@ -80,12 +88,16 @@ class ProfileImportHandler(private val context: Context) {
 
     suspend fun parseUri(uri: Uri): UriParseResult = withContext(Dispatchers.IO) {
         try {
-            val data =
+            val rawData =
                 context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     ?: return@withContext UriParseResult.Error(context.getString(R.string.error_empty_file))
 
             val filename = getFileNameFromUri(uri)
-            val dataString = String(data)
+
+            // Decode if encoded; keep raw bytes otherwise (see importFromUri).
+            val encoded = ConfigCodec.isEncoded(rawData)
+            val dataString = if (encoded) ConfigCodec.decode(rawData) else String(rawData)
+            val data = if (encoded) dataString.toByteArray() else rawData
 
             if (isJsonConfiguration(dataString)) {
                 return@withContext UriParseResult.Success(name = filename)

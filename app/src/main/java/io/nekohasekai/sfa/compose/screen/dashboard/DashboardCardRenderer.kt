@@ -14,6 +14,8 @@ fun DashboardCardRenderer(
     serviceStatus: Status = Status.Stopped,
     onClashModeSelected: (String) -> Unit,
     onSystemProxyToggle: (Boolean) -> Unit,
+    // Ad card props
+    onAdDismiss: () -> Unit = {},
     // Profile card specific props
     profiles: List<Profile> = emptyList(),
     selectedProfileId: Long = -1L,
@@ -38,6 +40,18 @@ fun DashboardCardRenderer(
     modifier: Modifier = Modifier,
 ) {
     when (cardGroup) {
+        CardGroup.Ad -> {
+            // Show ad card if not dismissed and (has data or is loading)
+            if (uiState.adsAllowed && !uiState.adDismissed && (uiState.adData != null || uiState.adLoading)) {
+                AdCard(
+                    adData = uiState.adData,
+                    isLoading = uiState.adLoading,
+                    onDismiss = onAdDismiss,
+                    modifier = modifier,
+                )
+            }
+        }
+
         CardGroup.ClashMode -> {
             if (uiState.clashModeVisible) {
                 ClashModeCard(

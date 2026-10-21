@@ -2,48 +2,43 @@ package io.nekohasekai.sfa.compose.screen.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.nekohasekai.sfa.R
-import io.nekohasekai.sfa.compose.component.RemoteControlMenuItems
-import io.nekohasekai.sfa.compose.component.rememberRemoteServers
+import io.nekohasekai.sfa.compose.component.XMark
 import io.nekohasekai.sfa.compose.navigation.NewProfileArgs
 import io.nekohasekai.sfa.compose.topbar.LocalScaffoldPadding
 import io.nekohasekai.sfa.compose.topbar.OverrideTopBar
 import io.nekohasekai.sfa.constant.Status
+import io.nekohasekai.sfa.panel.PanelSync
 import io.nekohasekai.sfa.utils.RemoteControlManager
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+
+private const val TRAFFIC_REFRESH_MS = 15_000L
 
 data class CardRenderItem(val cards: List<CardGroup>, val isRow: Boolean)
 
@@ -57,68 +52,30 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val panel by PanelSync.state.collectAsState()
+    // Data left, refreshed every few seconds while the dashboard is on screen.
+    LaunchedEffect(panel.signedIn) {
+        while (panel.signedIn) {
+            PanelSync.refreshTraffic()
+            delay(TRAFFIC_REFRESH_MS)
+        }
+    }
     val remoteServer by RemoteControlManager.remoteServer.collectAsState()
     val remoteConnected by RemoteControlManager.isConnected.collectAsState()
     val isRemote = remoteServer != null
-    val remoteServers by rememberRemoteServers()
-    var showOthersMenu by remember { mutableStateOf(false) }
-
+    // XeroBox: a brand header instead of "Dashboard", and no menu (the layout is fixed).
     OverrideTopBar {
         TopAppBar(
-            title = { Text(stringResource(R.string.title_dashboard)) },
-            actions = {
-                Box {
-                    IconButton(onClick = { showOthersMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = stringResource(R.string.title_others),
-                        )
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    XMark(modifier = Modifier.size(30.dp), spread = if (serviceStatus == Status.Started) 0f else 0.35f)
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text("XeroBox", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        panel.account?.accountId?.takeIf { panel.signedIn && it.isNotEmpty() }?.let {
+                            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
-                    DropdownMenu(
-                        expanded = showOthersMenu,
-                        onDismissRequest = { showOthersMenu = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.dashboard_items)) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.GridView,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = {
-                                showOthersMenu = false
-                                viewModel.toggleCardSettingsDialog()
-                            },
-                        )
-                        RemoteControlMenuItems(
-                            servers = remoteServers,
-                            onAction = { showOthersMenu = false },
-                        )
-                    }
-                }
-            },
-        )
-    }
-
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-
-    // Show dashboard settings bottom sheet
-    if (uiState.showCardSettingsDialog) {
-        DashboardSettingsBottomSheet(
-            sheetState = sheetState,
-            visibleCards = uiState.visibleCards,
-            cardOrder = uiState.cardOrder,
-            onToggleCard = viewModel::toggleCardVisibility,
-            onReorderCards = viewModel::reorderCards,
-            onResetOrder = viewModel::resetCardOrder,
-            onDismiss = {
-                scope.launch {
-                    sheetState.hide()
-                    viewModel.closeCardSettingsDialog()
                 }
             },
         )
@@ -159,7 +116,8 @@ fun DashboardScreen(
 
             // Filter cards based on availability
             val actuallyVisibleCards =
-                uiState.visibleCards.filter { cardGroup ->
+                // XeroBox: the Debug card (core memory, goroutines) is for developers, not users.
+                uiState.visibleCards.filter { it != CardGroup.Debug }.filter { cardGroup ->
                     when {
                         // The remote dashboard only renders cards backed by the
                         // command protocol: profiles and system proxy are
@@ -167,10 +125,12 @@ fun DashboardScreen(
                         isRemote ->
                             cardGroup != CardGroup.Profiles &&
                                 cardGroup != CardGroup.SystemProxy &&
+                                cardGroup != CardGroup.Ad &&  // Ad card is local-only
                                 serviceRunning &&
                                 isCardAvailableWhenServiceRunning(cardGroup, uiState)
 
                         cardGroup == CardGroup.Profiles -> true // Profiles card is always available
+                        cardGroup == CardGroup.Ad -> isCardAvailableWhenServiceRunning(cardGroup, uiState) // Ad card available regardless of service
                         else -> serviceRunning && isCardAvailableWhenServiceRunning(cardGroup, uiState)
                     }
                 }.toSet()
@@ -181,6 +141,24 @@ fun DashboardScreen(
                     cardOrder = uiState.cardOrder,
                     visibleCards = actuallyVisibleCards,
                 )
+
+            // Protection status header, local dashboard only
+            if (!isRemote) {
+                item(key = "shield-status") {
+                    ShieldStatusCard(
+                        status = serviceStatus,
+                        profileName = uiState.profiles
+                            .firstOrNull { it.id == uiState.selectedProfileId }
+                            ?.name,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+            // Data left on the account (3x-ui accounting on the server).
+            val traffic = panel.account?.traffic
+            if (!isRemote && panel.signedIn && traffic != null) {
+                item(key = "traffic") { TrafficCard(traffic = traffic) }
+            }
 
             items(cardRenderItems) { renderItem ->
                 if (renderItem.isRow && renderItem.cards.size >= 2) {
@@ -195,6 +173,7 @@ fun DashboardScreen(
                                 uiState = uiState,
                                 onClashModeSelected = viewModel::selectClashMode,
                                 onSystemProxyToggle = viewModel::toggleSystemProxy,
+                                onAdDismiss = viewModel::dismissAd,
                                 // Profile card specific props
                                 profiles = uiState.profiles,
                                 selectedProfileId = uiState.selectedProfileId,
@@ -232,6 +211,7 @@ fun DashboardScreen(
                             serviceStatus = serviceStatus,
                             onClashModeSelected = viewModel::selectClashMode,
                             onSystemProxyToggle = viewModel::toggleSystemProxy,
+                            onAdDismiss = viewModel::dismissAd,
                             // Profile card specific props
                             profiles = uiState.profiles,
                             selectedProfileId = uiState.selectedProfileId,
@@ -306,6 +286,7 @@ fun processCardsForRendering(
  * Note: Profiles card is always available and should not use this function.
  */
 fun isCardAvailableWhenServiceRunning(cardGroup: CardGroup, uiState: DashboardUiState): Boolean = when (cardGroup) {
+    CardGroup.Ad -> uiState.adsAllowed && !uiState.adDismissed && (uiState.adData != null || uiState.adLoading) // Ad card shows if not dismissed and has data/loading
     CardGroup.ClashMode -> uiState.clashModeVisible
     CardGroup.UploadTraffic -> uiState.trafficVisible
     CardGroup.DownloadTraffic -> uiState.trafficVisible

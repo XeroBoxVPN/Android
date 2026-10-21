@@ -20,19 +20,16 @@ import io.nekohasekai.sfa.compose.screen.dashboard.DashboardScreen
 import io.nekohasekai.sfa.compose.screen.dashboard.DashboardViewModel
 import io.nekohasekai.sfa.compose.screen.dashboard.GroupsCard
 import io.nekohasekai.sfa.compose.screen.dashboard.groups.GroupsViewModel
-import io.nekohasekai.sfa.compose.screen.log.HookLogScreen
 import io.nekohasekai.sfa.compose.screen.log.LogScreen
 import io.nekohasekai.sfa.compose.screen.log.LogViewModel
-import io.nekohasekai.sfa.compose.screen.privilegesettings.PrivilegeSettingsManageScreen
 import io.nekohasekai.sfa.compose.screen.profile.EditProfileRoute
 import io.nekohasekai.sfa.compose.screen.profileoverride.PerAppProxyScreen
 import io.nekohasekai.sfa.compose.screen.settings.AppSettingsScreen
-import io.nekohasekai.sfa.compose.screen.settings.CoreSettingsScreen
-import io.nekohasekai.sfa.compose.screen.settings.EditRemoteServerScreen
 import io.nekohasekai.sfa.compose.screen.settings.FDroidMirrorScreen
-import io.nekohasekai.sfa.compose.screen.settings.PrivilegeSettingsScreen
+import io.nekohasekai.sfa.compose.screen.settings.AccountScreen
+import io.nekohasekai.sfa.compose.screen.settings.InviteScreen
+import io.nekohasekai.sfa.compose.screen.settings.ReportProblemScreen
 import io.nekohasekai.sfa.compose.screen.settings.ProfileOverrideScreen
-import io.nekohasekai.sfa.compose.screen.settings.RemoteControlScreen
 import io.nekohasekai.sfa.compose.screen.settings.ServiceSettingsScreen
 import io.nekohasekai.sfa.compose.screen.settings.SettingsScreen
 import io.nekohasekai.sfa.compose.screen.settings.TailscaleFontPickerScreen
@@ -632,14 +629,35 @@ fun NavHost(
         }
 
         composable(
-            route = "settings/core",
+            route = "settings/account",
             enterTransition = slideInFromRight,
-            exitTransition = slideOutToRight,
-            popEnterTransition = slideInFromRight,
+            exitTransition = slideOutToLeft,
+            popEnterTransition = slideInFromLeft,
             popExitTransition = slideOutToRight,
         ) {
-            CoreSettingsScreen(navController = navController)
+            AccountScreen(navController = navController)
         }
+
+        composable(
+            route = "settings/invite",
+            enterTransition = slideInFromRight,
+            exitTransition = slideOutToLeft,
+            popEnterTransition = slideInFromLeft,
+            popExitTransition = slideOutToRight,
+        ) {
+            InviteScreen(navController = navController)
+        }
+
+        composable(
+            route = "settings/report",
+            enterTransition = slideInFromRight,
+            exitTransition = slideOutToLeft,
+            popEnterTransition = slideInFromLeft,
+            popExitTransition = slideOutToRight,
+        ) {
+            ReportProblemScreen(navController = navController)
+        }
+
 
         composable(
             route = "settings/service",
@@ -669,58 +687,6 @@ fun NavHost(
             popExitTransition = slideOutToRight,
         ) {
             PerAppProxyScreen(onBack = { navController.navigateUp() }, serviceStatus = serviceStatus)
-        }
-
-        composable(
-            route = "settings/remote_control",
-            enterTransition = slideInFromRight,
-            exitTransition = slideOutToLeft,
-            popEnterTransition = slideInFromLeft,
-            popExitTransition = slideOutToRight,
-        ) {
-            RemoteControlScreen(navController = navController)
-        }
-
-        composable(
-            route = "settings/remote_control/new",
-            enterTransition = slideInFromRight,
-            exitTransition = slideOutToLeft,
-            popEnterTransition = slideInFromLeft,
-            popExitTransition = slideOutToRight,
-        ) {
-            EditRemoteServerScreen(navController = navController)
-        }
-
-        composable(
-            route = "settings/remote_control/edit/{serverId}",
-            arguments = listOf(navArgument("serverId") { type = NavType.LongType }),
-            enterTransition = slideInFromRight,
-            exitTransition = slideOutToLeft,
-            popEnterTransition = slideInFromLeft,
-            popExitTransition = slideOutToRight,
-        ) { backStackEntry ->
-            val serverId = backStackEntry.arguments?.getLong("serverId") ?: -1L
-            EditRemoteServerScreen(navController = navController, serverId = serverId)
-        }
-
-        composable(
-            route = "settings/privilege",
-            enterTransition = slideInFromRight,
-            exitTransition = slideOutToLeft,
-            popEnterTransition = slideInFromLeft,
-            popExitTransition = slideOutToRight,
-        ) {
-            PrivilegeSettingsScreen(navController = navController, serviceStatus = serviceStatus)
-        }
-
-        composable(
-            route = "settings/privilege/manage",
-            enterTransition = slideInFromRight,
-            exitTransition = slideOutToLeft,
-            popEnterTransition = slideInFromLeft,
-            popExitTransition = slideOutToRight,
-        ) {
-            PrivilegeSettingsManageScreen(onBack = { navController.navigateUp() }, serviceStatus = serviceStatus)
         }
 
         composable(
@@ -765,16 +731,6 @@ fun NavHost(
             popExitTransition = slideOutToRight,
         ) {
             TailscaleFontPickerScreen(navController = navController)
-        }
-
-        composable(
-            route = "settings/privilege/logs",
-            enterTransition = slideInFromRight,
-            exitTransition = slideOutToLeft,
-            popEnterTransition = slideInFromLeft,
-            popExitTransition = slideOutToRight,
-        ) {
-            HookLogScreen(onBack = { navController.navigateUp() })
         }
     }
 }

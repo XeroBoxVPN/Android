@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <style name="AppTheme" parent="AppTheme.Base" />
 
     <style name="AppTheme.Base" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme</item>
+        <!-- Android 12+ launch screen: the X on the XeroBox void, in light and dark mode alike. -->
+        <item name="android:windowSplashScreenBackground" tools:targetApi="s">@color/xero_void</item>
     </style>
 
     <style name="AppTheme.Translucent" parent="Theme.Material3.DayNight.Dialog.Alert">

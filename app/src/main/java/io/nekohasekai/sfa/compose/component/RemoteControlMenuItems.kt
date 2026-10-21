@@ -11,8 +11,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,35 +24,14 @@ import io.nekohasekai.sfa.R
 import io.nekohasekai.sfa.compose.base.GlobalEventBus
 import io.nekohasekai.sfa.compose.base.UiEvent
 import io.nekohasekai.sfa.database.RemoteServer
-import io.nekohasekai.sfa.database.RemoteServerManager
 import io.nekohasekai.sfa.utils.RemoteControlManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 const val REMOTE_CONTROL_ROUTE = "settings/remote_control"
 
+// Remote control is removed from XeroBox: no servers, so every remote-control menu stays hidden.
 @Composable
-fun rememberRemoteServers(): State<List<RemoteServer>> {
-    val scope = rememberCoroutineScope()
-    val servers = remember { mutableStateOf<List<RemoteServer>>(emptyList()) }
-
-    LaunchedEffect(Unit) {
-        servers.value = withContext(Dispatchers.IO) { RemoteServerManager.list() }
-    }
-    DisposableEffect(Unit) {
-        val callback: () -> Unit = {
-            scope.launch {
-                servers.value = withContext(Dispatchers.IO) { RemoteServerManager.list() }
-            }
-        }
-        RemoteServerManager.registerCallback(callback)
-        onDispose {
-            RemoteServerManager.unregisterCallback(callback)
-        }
-    }
-    return servers
-}
+fun rememberRemoteServers(): State<List<RemoteServer>> = remember { mutableStateOf(emptyList()) }
 
 @Composable
 fun RemoteControlMenuItems(servers: List<RemoteServer>, onAction: () -> Unit, leadingDivider: Boolean = true) {

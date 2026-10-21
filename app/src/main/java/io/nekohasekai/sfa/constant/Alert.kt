@@ -8,4 +8,7 @@ enum class Alert {
     StartCommandServer,
     CreateService,
     StartService,
+
+    /** A personal config's account has no data left, expired or is suspended. */
+    DataExhausted,
 }

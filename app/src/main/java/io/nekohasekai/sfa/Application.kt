@@ -14,6 +14,11 @@ import android.util.Log
 import androidx.core.content.getSystemService
 import io.nekohasekai.libbox.Libbox
 import io.nekohasekai.libbox.SetupOptions
+import io.nekohasekai.sfa.bg.AdNotifyWork
+import io.nekohasekai.sfa.ext.Extensions
+import io.nekohasekai.sfa.panel.BugReports
+import io.nekohasekai.sfa.panel.PanelSync
+import io.nekohasekai.sfa.panel.PanelSyncWork
 import io.nekohasekai.sfa.bg.AppChangeReceiver
 import io.nekohasekai.sfa.bg.CrashReportManager
 import io.nekohasekai.sfa.bg.OOMReportManager
@@ -44,6 +49,13 @@ class Application : Application() {
     override fun onCreate() {
         super.onCreate()
         AppLifecycleObserver.register(this)
+        // Panel: sync whenever the app comes to the foreground (throttled inside).
+        @Suppress("OPT_IN_USAGE")
+        GlobalScope.launch {
+            AppLifecycleObserver.isForeground.collect { foreground ->
+                if (foreground) runCatching { PanelSync.onForeground() }
+            }
+        }
 
 //        Seq.setContext(this)
         runCatching {
@@ -70,7 +82,26 @@ class Application : Application() {
             HookStatusClient.register(this@Application)
             PrivilegeSettingsClient.register(this@Application)
             initialize(baseDir, workingDir, tempDir)
+            // ADD-ON HOOK: add-on libraries start here, after settings and the core are
+            // ready. Register a library in ext/InstalledExtensions.kt, not here.
+            runCatching {
+                val panel = PanelSync.state.value
+                Extensions.onAppStart(
+                    this@Application,
+                    panel.account?.takeIf { panel.signedIn }?.let { Extensions.account(it, panel.adsAllowed) },
+                )
+            }.onFailure { Log.e("Application", "start add-ons", it) }
             UpdateProfileWork.reconfigureUpdater()
+            runCatching { AdNotifyWork.schedule() }
+                .onFailure { Log.e("Application", "schedule ad notifications", it) }
+            runCatching { PanelSyncWork.schedule() }
+                .onFailure { Log.e("Application", "schedule panel sync", it) }
+            // Crashes caught last time (app or VPN core) go to the server once, from the
+            // main process only.
+            if (Build.VERSION.SDK_INT < 28 || getProcessName() == packageName) {
+                runCatching { BugReports.sendPendingCrashes() }
+                    .onFailure { Log.e("Application", "send crash reports", it) }
+            }
             HookModuleUpdateNotifier.sync(this@Application)
             TaildropFiles.cleanCache()
         }

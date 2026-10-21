@@ -7,25 +7,32 @@ import io.nekohasekai.libbox.StatusMessage
 import io.nekohasekai.sfa.bg.BoxService
 import io.nekohasekai.sfa.compose.base.BaseViewModel
 import io.nekohasekai.sfa.compose.base.UiEvent
+import io.nekohasekai.sfa.config.AdConfig
+import io.nekohasekai.sfa.panel.PanelSync
 import io.nekohasekai.sfa.constant.Status
 import io.nekohasekai.sfa.database.Profile
 import io.nekohasekai.sfa.database.ProfileManager
 import io.nekohasekai.sfa.database.Settings
 import io.nekohasekai.sfa.database.TypedProfile
+import io.nekohasekai.sfa.model.AdData
 import io.nekohasekai.sfa.utils.AppLifecycleObserver
 import io.nekohasekai.sfa.utils.CommandClient
 import io.nekohasekai.sfa.utils.CommandTarget
+import io.nekohasekai.sfa.utils.ConfigCodec
 import io.nekohasekai.sfa.utils.HTTPClient
 import io.nekohasekai.sfa.utils.RemoteControlManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.File
@@ -33,6 +40,7 @@ import java.util.Collections
 import java.util.Date
 
 enum class CardGroup(val pairGroup: CardPairGroup? = null) {
+    Ad,  // Self-hosted ad card - always at top
     ClashMode,
     UploadTraffic(CardPairGroup.Traffic),
     DownloadTraffic(CardPairGroup.Traffic),
@@ -63,6 +71,12 @@ data class DashboardUiState(
     val showProfilePickerSheet: Boolean = false,
     val updatingProfileId: Long? = null,
     val updatedProfileId: Long? = null,
+    // Ad state
+    val adData: AdData? = null,
+    val adLoading: Boolean = false,
+    val adDismissed: Boolean = false,
+    /** Whether any ad may show: panel policy when signed in, the build config otherwise. */
+    val adsAllowed: Boolean = AdConfig.hasAnyAd(),
     // Status
     val memory: String = "",
     val goroutines: String = "",
@@ -88,6 +102,7 @@ data class DashboardUiState(
     // Card visibility settings
     val visibleCards: Set<CardGroup> =
         setOf(
+            CardGroup.Ad,
             CardGroup.ClashMode,
             CardGroup.UploadTraffic,
             CardGroup.DownloadTraffic,
@@ -98,6 +113,7 @@ data class DashboardUiState(
         ),
     val cardOrder: List<CardGroup> =
         listOf(
+            CardGroup.Ad,  // Ad card at top
             CardGroup.UploadTraffic,
             CardGroup.DownloadTraffic,
             CardGroup.Debug,
@@ -132,22 +148,56 @@ class DashboardViewModel :
         )
 
     override fun createInitialState(): DashboardUiState {
-        val savedOrder = loadItemOrder()
-        val disabledItems = loadDisabledItems()
-
-        // Calculate visible items (all items minus disabled)
-        val allItems = CardGroup.values().toSet()
-        val visibleCards = allItems - disabledItems
-
+        // XeroBox: the dashboard layout is fixed. Cards hidden or reordered by an older
+        // build are ignored, so nobody is left without a card they can't bring back.
         return DashboardUiState(
-            cardOrder = savedOrder,
-            visibleCards = visibleCards,
+            cardOrder = getDefaultItemOrder(),
+            visibleCards = CardGroup.values().toSet(),
         )
     }
+
+    /**
+     * Main-thread only; prevents overlapping ad fetches when a refresh fires mid-request.
+     * Declared above init, which starts the first fetch, so its initializer runs first.
+     */
+    private var adFetchInFlight = false
 
     init {
         loadProfiles()
         ProfileManager.registerCallback(::onProfilesChanged)
+
+        // The built-in ad shows immediately with no server; a configured server's ad
+        // replaces it once fetched.
+        if (!PanelSync.isSignedIn) {
+            AdConfig.builtInAdOrNull()?.let { ad -> updateState { copy(adData = ad) } }
+        }
+
+        // Signed in to the panel: its policy decides whether ads show, and its sync supplies
+        // the ad (built-in ad included in the "off"). Signing out restores the built-in ad.
+        viewModelScope.launch {
+            var wasSignedIn = PanelSync.isSignedIn
+            PanelSync.state.collect { panel ->
+                if (panel.signedIn) {
+                    updateState { copy(adsAllowed = panel.adsAllowed, adData = panel.ad, adLoading = false) }
+                } else if (wasSignedIn) {
+                    updateState { copy(adsAllowed = AdConfig.hasAnyAd(), adData = AdConfig.builtInAdOrNull()) }
+                }
+                wasSignedIn = panel.signedIn
+            }
+        }
+
+        // Load the ad on startup, then refresh it every REFRESH_INTERVAL_MS while the app
+        // is in the foreground. Nothing runs while the endpoint is still the placeholder.
+        if (AdConfig.isConfigured()) {
+            viewModelScope.launch {
+                AppLifecycleObserver.isForeground.collectLatest { foreground ->
+                    while (foreground) {
+                        refreshAd()
+                        delay(AdConfig.REFRESH_INTERVAL_MS)
+                    }
+                }
+            }
+        }
 
         viewModelScope.launch {
             combine(
@@ -168,6 +218,64 @@ class DashboardViewModel :
                     commandClient.disconnect()
                 }
             }
+        }
+    }
+
+    /**
+     * Fetch ad data from the configured endpoint.
+     */
+    private fun loadAd() {
+        if (!AdConfig.isConfigured()) return
+        // The panel sync owns the ad while signed in.
+        if (PanelSync.isSignedIn) return
+
+        if (adFetchInFlight) return
+        adFetchInFlight = true
+
+        // Set on the caller's (main) thread: updateState is not atomic, so writing it
+        // from IO could race with, and drop, a concurrent main-thread update.
+        // Only the first load shows the spinner; a refresh keeps the current ad up.
+        if (currentState.adData == null) {
+            updateState { copy(adLoading = true) }
+        }
+
+        viewModelScope.launch {
+            // The libbox HTTP call blocks and cannot be cancelled, so the timeout stops
+            // us waiting on it rather than aborting it; a late result is discarded.
+            val fetch = async(Dispatchers.IO) {
+                runCatching {
+                    AdData.fromJson(HTTPClient().use { it.getString(AdConfig.AD_ENDPOINT_URL) })
+                }
+            }
+            // null = timed out; a successful Result holding null = the server has no ad.
+            val result = withTimeoutOrNull(AdConfig.FETCH_TIMEOUT_MS) { fetch.await() }
+            if (result == null) fetch.cancel()
+            adFetchInFlight = false
+            // Ads are non-critical: on a network failure or timeout keep whatever is
+            // showing and fail silently.
+            updateState {
+                copy(
+                    adData = if (result != null && result.isSuccess) result.getOrNull() else this.adData,
+                    adLoading = false,
+                )
+            }
+        }
+    }
+
+    /**
+     * Dismiss the current ad (hides until next app session).
+     */
+    fun dismissAd() {
+        updateState { copy(adDismissed = true) }
+    }
+
+    /**
+     * Refresh ad data.
+     */
+    fun refreshAd() {
+        // A user who hid the Sponsored card should not keep contacting the ad server.
+        if (!currentState.adDismissed && CardGroup.Ad in currentState.visibleCards) {
+            loadAd()
         }
     }
 
@@ -353,8 +461,10 @@ class DashboardViewModel :
             }
 
             try {
-                // Fetch remote config
-                val content = HTTPClient().use { it.getString(profile.typed.remoteURL) }
+                // Fetch remote config, decoding if the subscription serves the ENC1: form
+                val content = ConfigCodec.decode(
+                    HTTPClient().use { it.getString(profile.typed.remoteURL) },
+                )
                 Libbox.checkConfig(content)
 
                 // Check if content changed
@@ -685,6 +795,10 @@ class DashboardViewModel :
             }
             copy(visibleCards = newVisibleCards)
         }
+        // Turning the ad card back on shouldn't wait for the next 5-minute refresh.
+        if (cardGroup == CardGroup.Ad && AdConfig.isConfigured()) {
+            refreshAd()
+        }
     }
 
     fun closeCardSettingsDialog() {
@@ -715,6 +829,7 @@ class DashboardViewModel :
 
     // Helper functions for serialization
     private fun getDefaultItemOrder() = listOf(
+        CardGroup.Ad,
         CardGroup.UploadTraffic,
         CardGroup.DownloadTraffic,
         CardGroup.Debug,
@@ -744,7 +859,11 @@ class DashboardViewModel :
             val savedItems = order.toSet()
             val newItems = allItems - savedItems
 
-            order.addAll(newItems)
+            // The ad card belongs at the top, not after the user's saved cards.
+            if (CardGroup.Ad in newItems) {
+                order.add(0, CardGroup.Ad)
+            }
+            order.addAll(newItems - CardGroup.Ad)
             order
         } catch (e: JSONException) {
             getDefaultItemOrder()

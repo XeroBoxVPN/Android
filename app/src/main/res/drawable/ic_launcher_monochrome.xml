@@ -1,10 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 13+ themed icon: the X as a single-colour silhouette. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="1024"
-    android:viewportHeight="1024">
-    <path
-        android:pathData="M512,237 754.5,377 754.5,647 512,787 269.5,647 269.5,377Z M356.8,326.6 424.7,287.4 667.2,427.4 599.3,466.6Z M599.3,466.6 667.2,427.4 667.2,547.4 599.3,586.6Z M272.9,387.1 501.6,519.1 508.6,506.9 279.9,374.9Z M522.4,519.1 751.1,387.1 744.1,374.9 515.4,506.9Z M505,527 519,527 519,777 505,777Z"
-        android:fillColor="#FFFFFF"
-        android:fillType="evenOdd" />
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="24" android:translateY="24" android:scaleX="0.234375" android:scaleY="0.234375">
+        <path android:pathData="M128.7,99 L72.1,42.4 L42.4,72.1 L99,128.7 Z M127.3,99 L183.9,42.4 L213.6,72.1 L157,128.7 Z M157,127.3 L213.6,183.9 L183.9,213.6 L127.3,157 Z M99,127.3 L42.4,183.9 L72.1,213.6 L128.7,157 Z" android:fillColor="#FFFFFFFF" android:strokeColor="#FFFFFFFF" android:strokeWidth="6" android:strokeLineJoin="round"/>
+        <path android:pathData="M128,114 L142,128 L128,142 L114,128 Z" android:fillColor="#FFFFFFFF"/>
+    </group>
 </vector>

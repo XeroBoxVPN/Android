@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status bar and quick settings tile: the X as a white silhouette (Android tints it). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path android:pathData="M128.7,99 L72.1,42.4 L42.4,72.1 L99,128.7 Z M127.3,99 L183.9,42.4 L213.6,72.1 L157,128.7 Z M157,127.3 L213.6,183.9 L183.9,213.6 L127.3,157 Z M99,127.3 L42.4,183.9 L72.1,213.6 L128.7,157 Z" android:fillColor="#FFFFFFFF" android:strokeColor="#FFFFFFFF" android:strokeWidth="10" android:strokeLineJoin="round"/>
+    <path android:pathData="M128,114 L142,128 L128,142 L114,128 Z" android:fillColor="#FFFFFFFF"/>
+</vector>

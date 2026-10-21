@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <!-- App -->
-    <string name="app_name" translatable="false">sing-box</string>
+    <string name="app_name" translatable="false">XeroBox</string>
     <string name="app_version_title">App version</string>
     <string name="language">Language</string>
     <string name="system_default">System default</string>
@@ -126,6 +126,45 @@
 
     <!-- Profiles -->
     <string name="no_profiles">No profiles configured</string>
+    <string name="profiles_empty_synced">No profiles yet. They appear here after your account syncs.</string>
+    <string name="profile_selected_badge">Active</string>
+    <string name="quota_title">Connection stopped</string>
+    <string name="quota_used_up">You have used all your data. Invite a friend or watch a rewarded ad to get more.</string>
+    <string name="traffic_title">Data</string>
+    <string name="traffic_left">left</string>
+    <string name="traffic_used_of">%1$s of %2$s used</string>
+    <string name="traffic_low">Running low. Invite a friend or watch a rewarded ad for more data.</string>
+    <string name="traffic_unlimited">Unlimited</string>
+    <string name="traffic_unlimited_used">%1$s used this plan. No data limit.</string>
+    <string name="plan_title">Plan</string>
+    <string name="plan_paid_until">Paid until %1$s</string>
+    <string name="plan_free">No paid plan</string>
+    <string name="plan_upgrade">Upgrade with Telegram</string>
+    <string name="plan_renew">Renew or change plan</string>
+    <string name="plan_body">Plans are bought and renewed in our Telegram bot. This button links your account to it.</string>
+    <string name="plan_no_telegram">Telegram is not installed. Install it, then try again.</string>
+    <string name="traffic_exhausted">You have used all your data. Invite a friend or watch a rewarded ad to get more.</string>
+    <string name="ad_watch_to_earn">Watch to earn %s</string>
+    <string name="ad_reward_starting">Starting…</string>
+    <string name="ad_reward_watching">Keep this open to earn %s</string>
+    <string name="ad_reward_leave">Leave without reward</string>
+    <string name="ad_reward_claiming">Adding your reward…</string>
+    <string name="ad_reward_done">%s added to your account</string>
+    <string name="ad_reward_close">Close</string>
+    <string name="ad_reward_failed">The reward could not be added. Try again later.</string>
+    <string name="report_title">Report a problem</string>
+    <string name="report_subtitle">Tell us what went wrong</string>
+    <string name="report_body">Describe what happened and what you expected. Your report goes to the XeroBox team with your Account ID, this device, the app version and the Android version.</string>
+    <string name="report_what_happened">What happened?</string>
+    <string name="report_placeholder">e.g. Connecting fails after switching to mobile data</string>
+    <string name="report_include_logs">Include diagnostic log</string>
+    <string name="report_include_logs_body">Recent log lines from this app only. Helps us find the cause.</string>
+    <string name="report_auto_crashes">Send crash reports automatically</string>
+    <string name="report_auto_crashes_body">When the app or the VPN crashes, the details are sent the next time you open it.</string>
+    <string name="report_privacy">Your account and this device are included so we can help you. Passwords, sign-in tokens, your login code and your VPN keys are never sent.</string>
+    <string name="report_send">Send report</string>
+    <string name="report_sent">Thank you!</string>
+    <string name="report_sent_body">Your report was sent (reference %1$s).</string>
     <string name="add_profile">Add Profile</string>
     <string name="update_profile">Update profile</string>
     <string name="import_remote_profile">Import remote profile</string>
@@ -259,12 +298,12 @@
     <string name="background_permission_description">Apply for the necessary permissions in order for the VPN to function properly.\n\nIf you are using a device made by a Chinese company, the card may not disappear after the permission is granted.</string>
     <string name="request_background_permission">Ignore</string>
     <string name="location_permission_title">Location permission</string>
-    <string name="location_permission_description">Your profile contains &lt;strong&gt;&lt;tt&gt;wifi_ssid&lt;/tt&gt; or &lt;tt&gt;wifi_bssid&lt;/tt&gt; routing rules&lt;/strong&gt;. To make them work, sing-box uses the &lt;strong&gt;location&lt;/strong&gt; permission &lt;strong&gt;in the background&lt;/strong&gt; to get information about the connected Wi-Fi network. The information will be used &lt;strong&gt;for routing purposes only&lt;/strong&gt;.</string>
+    <string name="location_permission_description">Your profile contains &lt;strong&gt;&lt;tt&gt;wifi_ssid&lt;/tt&gt; or &lt;tt&gt;wifi_bssid&lt;/tt&gt; routing rules&lt;/strong&gt;. To make them work, XeroBox uses the &lt;strong&gt;location&lt;/strong&gt; permission &lt;strong&gt;in the background&lt;/strong&gt; to get information about the connected Wi-Fi network. The information will be used &lt;strong&gt;for routing purposes only&lt;/strong&gt;.</string>
     <string name="location_permission_background_description">On Android 10 and up, &lt;strong&gt;background location&lt;/strong&gt; permission is required. Select &lt;strong&gt;Allow all the time&lt;/strong&gt; to grant the permission.</string>
     <string name="local_network_permission_title">Local network permission</string>
     <string name="local_network_permission_description">Android 17 and later versions require the local network permission to access your Wi-Fi or Ethernet network. Android requests it as nearby devices.</string>
     <string name="notification_permission_title">Notification permission</string>
-    <string name="notification_permission_required_description">sing-box is unable to show real-time network speeds without the permission to send notifications. Please grant the permission or disable real-time network speeds notification before starting the service.</string>
+    <string name="notification_permission_required_description">XeroBox is unable to show real-time network speeds without the permission to send notifications. Please grant the permission or disable real-time network speeds notification before starting the service.</string>
     <string name="root_access_required">Root access required</string>
     <string name="root_access_denied">Root access denied</string>
 
@@ -356,7 +395,7 @@
     <string name="error_empty_configuration">Empty configuration</string>
     <string name="error_empty_file">Empty file</string>
     <string name="error_decode_profile">Failed to decode profile: %s</string>
-    <string name="error_invalid_configuration">Invalid sing-box configuration: %s</string>
+    <string name="error_invalid_configuration">Invalid configuration: %s</string>
     <string name="error_start_command_server">Start command server</string>
     <string name="error_create_service">Create service</string>
     <string name="error_start_service">Start service</string>
@@ -563,7 +602,7 @@
     <string name="taildrop_no_files_selected">No files selected</string>
     <string name="taildrop_connecting">Connecting…</string>
     <string name="taildrop_dismiss">Dismiss</string>
-    <string name="taildrop_open_app">Open sing-box</string>
+    <string name="taildrop_open_app">Open XeroBox</string>
     <string name="taildrop_notification_title">Sending files</string>
 
     <!-- STUN Test -->
@@ -621,7 +660,7 @@
     <string name="power_report_enable_description">A report is saved for each service run</string>
 
     <!-- Xposed Module -->
-    <string name="xposed_description">Privileged Enhancement for sing-box</string>
+    <string name="xposed_description">Privileged Enhancement for XeroBox</string>
 
     <!-- Privileged Enhancement -->
     <string name="privilege_module_title">Privilege modules</string>
@@ -739,4 +778,78 @@
     <string name="endpoint_browser_navigation_failed">Browser navigation failed: %1$s</string>
     <string name="endpoint_browser_too_many_windows">The authentication page opened too many browser windows.</string>
     <string name="endpoint_browser_profile_unavailable">Browser authentication is unavailable on this device.</string>
+    <!-- Sponsored card -->
+    <string name="ad_sponsored">Sponsored</string>
+    <string name="ad_dismiss">Hide this ad</string>
+    <string name="ad_learn_more">Learn more</string>
+    <!-- Shield status header (dashboard) -->
+    <string name="shield_protected">Protected</string>
+    <string name="shield_connecting">Securing connection…</string>
+    <string name="shield_disconnecting">Disconnecting…</string>
+    <string name="shield_unprotected">Not protected</string>
+    <string name="shield_detail_protected">Traffic is encrypted through %1$s</string>
+    <string name="shield_detail_protected_no_profile">Traffic is encrypted through the tunnel</string>
+    <string name="shield_detail_unprotected">Your traffic is visible to this network. Tap start to connect.</string>
+    <string name="shield_detail_connecting">Building an encrypted tunnel to %1$s</string>
+    <string name="shield_detail_connecting_no_profile">Building an encrypted tunnel</string>
+    <string name="shield_detail_no_profile">Import a profile to get started.</string>
+    <string name="shield_chip_encrypted">Encrypted</string>
+    <string name="shield_chip_open">Open network</string>
+    <!-- Panel account -->
+    <string name="panel_account">Account</string>
+    <string name="panel_account_signed_out">Not signed in</string>
+    <string name="panel_sign_in_title">Sign in to your provider</string>
+    <string name="panel_sign_in_body">Enter your login code, or an invitation code from a friend. Your configurations download automatically and stay in sync.</string>
+    <string name="panel_welcome_title">Welcome to XeroBox</string>
+    <string name="panel_login_or_invite_code">Login or invitation code</string>
+    <string name="panel_account_id">Account ID</string>
+    <string name="panel_your_login_code">Your login code</string>
+    <string name="panel_your_login_code_body">Use this code to sign in on your other devices. Keep it private.</string>
+    <string name="panel_show">Show</string>
+    <string name="panel_hide">Hide</string>
+    <string name="panel_copy">Copy</string>
+    <string name="panel_copied">Copied</string>
+    <string name="panel_local_network_denied">Allow local network access so XeroBox can reach the server on this network.</string>
+    <string name="invite_title">Invite</string>
+    <string name="invite_subtitle">Share XeroBox with friends</string>
+    <string name="invite_body">Friends who sign in with your code get their own account, and you are credited for every device they register.</string>
+    <string name="invite_your_codes">Your invitation codes</string>
+    <string name="invite_share">Share</string>
+    <string name="invite_new_code">New code</string>
+    <string name="invite_used">Used %1$d times</string>
+    <string name="invite_used_of">Used %1$d of %2$d</string>
+    <string name="invite_inactive">Inactive</string>
+    <string name="invite_referred_accounts">Friends joined</string>
+    <string name="invite_referred_devices">Devices registered</string>
+    <string name="invite_unavailable">Invitations are not available for your account right now.</string>
+    <string name="invite_share_text">Join me on XeroBox. Install the app and sign in with my invitation code: %1$s</string>
+    <string name="invite_share_chooser">Share invitation</string>
+    <string name="panel_server_url">Server address</string>
+    <string name="panel_server_url_hint">https://panel.example.com</string>
+    <string name="panel_server_url_invalid">Enter an address starting with https://</string>
+    <string name="panel_login_code">Login code</string>
+    <string name="panel_login_code_hint">XXXX-XXXX-XXXX</string>
+    <string name="panel_sign_in">Sign in</string>
+    <string name="panel_sync_now">Sync now</string>
+    <string name="panel_syncing">Syncing…</string>
+    <string name="panel_sign_out">Sign out</string>
+    <string name="panel_sign_out_confirm_title">Sign out?</string>
+    <string name="panel_sign_out_confirm_body">Configurations from your provider will be removed from this device. Profiles you imported yourself stay.</string>
+    <string name="panel_cancel">Cancel</string>
+    <string name="panel_status_active">Active</string>
+    <string name="panel_status_suspended">Suspended</string>
+    <string name="panel_status_expired">Expired</string>
+    <string name="panel_expires">Expires</string>
+    <string name="panel_never">Never</string>
+    <string name="panel_last_sync">Last sync</string>
+    <string name="panel_not_synced">Not yet</string>
+    <string name="panel_configs">Configurations</string>
+    <string name="panel_server">Server</string>
+    <string name="panel_ads">Sponsored content</string>
+    <string name="panel_notifications">Announcements</string>
+    <string name="panel_on">On</string>
+    <string name="panel_off">Off</string>
+    <string name="panel_synced_ok">Up to date</string>
+    <string name="panel_channel_announcements">Announcements</string>
+    <string name="panel_channel_offers">Offers</string>
 </resources>

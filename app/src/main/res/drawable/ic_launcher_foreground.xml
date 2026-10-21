@@ -1,45 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- XeroBox X: four blades locked around a core (same geometry as windows/assets/mark.svg).
+     Scaled into the 66dp adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="1024"
-    android:viewportHeight="1024">
-    <group android:translateY="-25">
-        <path
-            android:pathData="M512,262 754.5,402 512,542 269.5,402Z"
-            android:fillColor="#42555F" />
-        <path
-            android:pathData="M269.5,402 512,542 512,812 269.5,672Z"
-            android:fillColor="#232F37" />
-        <path
-            android:pathData="M512,542 754.5,402 754.5,672 512,812Z"
-            android:fillColor="#34444F" />
-        <path
-            android:pathData="M390.75,472 633.25,332"
-            android:strokeColor="#141E24"
-            android:strokeWidth="4" />
-        <path
-            android:pathData="M512,262 754.5,402"
-            android:strokeColor="#66808D"
-            android:strokeWidth="2.5" />
-        <path
-            android:pathData="M512,262 269.5,402"
-            android:strokeColor="#5A737F"
-            android:strokeWidth="2.5" />
-        <path
-            android:pathData="M512,542 512,812"
-            android:strokeColor="#445963"
-            android:strokeWidth="2" />
-        <path
-            android:pathData="M356.8,351.6 390.75,332 633.25,472 599.3,491.6Z"
-            android:fillColor="#99AAB5" />
-        <path
-            android:pathData="M390.75,332 424.7,312.4 667.2,452.4 633.25,472Z"
-            android:fillColor="#E1E8ED" />
-        <path
-            android:pathData="M599.3,491.6 633.25,472 633.25,592 599.3,611.6Z"
-            android:fillColor="#8296A1" />
-        <path
-            android:pathData="M633.25,472 667.2,452.4 667.2,572.4 633.25,592Z"
-            android:fillColor="#CCD6DD" />
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="24" android:translateY="24" android:scaleX="0.234375" android:scaleY="0.234375">
+        <path android:pathData="M128,8 A120,120 0 1,1 127.9,8 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="radial" android:centerX="128" android:centerY="128" android:gradientRadius="120">
+                    <item android:offset="0" android:color="#4D2FCBFF"/>
+                    <item android:offset="1" android:color="#002FCBFF"/>
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path android:pathData="M128.7,99 L72.1,42.4 L42.4,72.1 L99,128.7 Z M127.3,99 L183.9,42.4 L213.6,72.1 L157,128.7 Z M157,127.3 L213.6,183.9 L183.9,213.6 L127.3,157 Z M99,127.3 L42.4,183.9 L72.1,213.6 L128.7,157 Z" android:strokeWidth="6" android:strokeLineJoin="round">
+            <aapt:attr name="android:fillColor"><gradient android:type="linear" android:startX="40" android:startY="40" android:endX="216" android:endY="216"><item android:offset="0" android:color="#FF5CFFC9"/><item android:offset="0.5" android:color="#FF2FCBFF"/><item android:offset="1" android:color="#FF6A5CFF"/></gradient></aapt:attr>
+            <aapt:attr name="android:strokeColor"><gradient android:type="linear" android:startX="40" android:startY="40" android:endX="216" android:endY="216"><item android:offset="0" android:color="#FF5CFFC9"/><item android:offset="0.5" android:color="#FF2FCBFF"/><item android:offset="1" android:color="#FF6A5CFF"/></gradient></aapt:attr>
+        </path>
+        <path android:pathData="M128,114 L142,128 L128,142 L114,128 Z" android:fillColor="#E65CFFC9"/>
     </group>
 </vector>

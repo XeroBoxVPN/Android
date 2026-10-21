@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- XeroBox brand colours for XML (Compose uses compose/theme/Color.kt). -->
+    <color name="xero_void">#FF07080D</color>
+    <color name="xero_cyan">#FF2FCBFF</color>
+</resources>

@@ -10,6 +10,7 @@ import io.nekohasekai.sfa.bg.UpdateProfileWork
 import io.nekohasekai.sfa.database.Profile
 import io.nekohasekai.sfa.database.ProfileManager
 import io.nekohasekai.sfa.database.TypedProfile
+import io.nekohasekai.sfa.utils.ConfigCodec
 import io.nekohasekai.sfa.utils.HTTPClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -268,9 +269,14 @@ class NewProfileViewModel(application: Application) : AndroidViewModel(applicati
                 }
             }
 
+        // Decode if the source was encoded. This path reads the file itself rather than
+        // going through ProfileImportHandler, so it needs its own decode step; without
+        // one an ENC1: file is written to disk verbatim and fails to load.
+        val decodedContent = ConfigCodec.decode(configContent)
+
         // Validate config
-        Libbox.checkConfig(configContent)
-        configFile.writeText(configContent)
+        Libbox.checkConfig(decodedContent)
+        configFile.writeText(decodedContent)
 
         // Create profile in database and select it
         ProfileManager.create(profile, andSelect = true)
@@ -299,8 +305,9 @@ class NewProfileViewModel(application: Application) : AndroidViewModel(applicati
         val configFile = File(configDirectory, "$fileID.json")
         typedProfile.path = configFile.path
 
-        // Fetch initial config - this MUST succeed for remote profiles
-        val content = HTTPClient().use { it.getString(state.remoteUrl) }
+        // Fetch initial config - this MUST succeed for remote profiles.
+        // Decoded first, so a subscription URL may serve either form.
+        val content = ConfigCodec.decode(HTTPClient().use { it.getString(state.remoteUrl) })
         Libbox.checkConfig(content)
         val configContent = content
 

@@ -13,14 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.SettingsRemote
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -33,10 +31,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -47,10 +43,8 @@ import androidx.navigation.NavController
 import io.nekohasekai.sfa.R
 import io.nekohasekai.sfa.compose.topbar.LocalScaffoldPadding
 import io.nekohasekai.sfa.compose.topbar.OverrideTopBar
-import io.nekohasekai.sfa.database.Settings
+import io.nekohasekai.sfa.panel.PanelSync
 import io.nekohasekai.sfa.update.UpdateState
-import io.nekohasekai.sfa.utils.HookModuleUpdateNotifier
-import io.nekohasekai.sfa.utils.HookStatusClient
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,14 +56,8 @@ fun SettingsScreen(navController: NavController) {
     }
 
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val hasUpdate by UpdateState.hasUpdate
-    val hookStatus by HookStatusClient.status.collectAsState()
-    val hasPendingPrivilegeDowngrade = HookModuleUpdateNotifier.isDowngrade(hookStatus)
-    val hasPendingPrivilegeUpdate = HookModuleUpdateNotifier.isUpgrade(hookStatus)
-    LaunchedEffect(Unit) {
-        HookStatusClient.refresh()
-    }
+    val panel by PanelSync.state.collectAsState()
 
     val scaffoldPadding = LocalScaffoldPadding.current
 
@@ -128,29 +116,6 @@ fun SettingsScreen(navController: NavController) {
                 ListItem(
                     headlineContent = {
                         Text(
-                            stringResource(R.string.core),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    },
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Outlined.Settings,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    },
-                    modifier =
-                    Modifier
-                        .clickable { navController.navigate("settings/core") },
-                    colors =
-                    ListItemDefaults.colors(
-                        containerColor = Color.Transparent,
-                    ),
-                )
-
-                ListItem(
-                    headlineContent = {
-                        Text(
                             stringResource(R.string.service),
                             style = MaterialTheme.typography.bodyLarge,
                         )
@@ -172,6 +137,68 @@ fun SettingsScreen(navController: NavController) {
                 ListItem(
                     headlineContent = {
                         Text(
+                            stringResource(R.string.panel_account),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            text = if (panel.signedIn) {
+                                panel.account?.accountId?.ifEmpty { null }
+                                    ?: panel.account?.name?.ifEmpty { null }
+                                    ?: stringResource(R.string.panel_status_active)
+                            } else {
+                                stringResource(R.string.panel_account_signed_out)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Outlined.AccountCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    },
+                    modifier = Modifier.clickable { navController.navigate("settings/account") },
+                    colors =
+                    ListItemDefaults.colors(
+                        containerColor = Color.Transparent,
+                    ),
+                )
+
+                if (panel.signedIn) {
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                stringResource(R.string.invite_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                stringResource(R.string.invite_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Outlined.CardGiftcard,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        },
+                        modifier = Modifier.clickable { navController.navigate("settings/invite") },
+                        colors =
+                        ListItemDefaults.colors(
+                            containerColor = Color.Transparent,
+                        ),
+                    )
+                }
+
+                ListItem(
+                    headlineContent = {
+                        Text(
                             stringResource(R.string.profile_override),
                             style = MaterialTheme.typography.bodyLarge,
                         )
@@ -185,61 +212,8 @@ fun SettingsScreen(navController: NavController) {
                     },
                     modifier =
                     Modifier
-                        .clickable { navController.navigate("settings/profile_override") },
-                    colors =
-                    ListItemDefaults.colors(
-                        containerColor = Color.Transparent,
-                    ),
-                )
-
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            stringResource(R.string.remote_control),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    },
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Outlined.SettingsRemote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    },
-                    modifier =
-                    Modifier
-                        .clickable { navController.navigate("settings/remote_control") },
-                    colors =
-                    ListItemDefaults.colors(
-                        containerColor = Color.Transparent,
-                    ),
-                )
-
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            stringResource(R.string.privilege_settings),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    },
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Outlined.AdminPanelSettings,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    },
-                    trailingContent = {
-                        if (hasPendingPrivilegeDowngrade) {
-                            Badge(containerColor = MaterialTheme.colorScheme.error)
-                        } else if (hasPendingPrivilegeUpdate) {
-                            Badge(containerColor = Color(0xFFFFC107))
-                        }
-                    },
-                    modifier =
-                    Modifier
                         .clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
-                        .clickable { navController.navigate("settings/privilege") },
+                        .clickable { navController.navigate("settings/profile_override") },
                     colors =
                     ListItemDefaults.colors(
                         containerColor = Color.Transparent,
@@ -270,38 +244,33 @@ fun SettingsScreen(navController: NavController) {
                 ListItem(
                     headlineContent = {
                         Text(
-                            stringResource(R.string.error_deprecated_documentation),
+                            stringResource(R.string.report_title),
                             style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            stringResource(R.string.report_subtitle),
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     },
                     leadingContent = {
                         Icon(
-                            imageVector = Icons.Outlined.Description,
+                            imageVector = Icons.Outlined.BugReport,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                        )
-                    },
-                    trailingContent = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
                     modifier =
                     Modifier
                         .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                        .clickable {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
-                            intent.data = android.net.Uri.parse("https://sing-box.sagernet.org/")
-                            context.startActivity(intent)
-                        },
+                        .clickable { navController.navigate("settings/report") },
                     colors =
                     ListItemDefaults.colors(
                         containerColor = Color.Transparent,
                     ),
                 )
-
+                // The engine's source stays linked: GPL credit (see HANDOFF.md, "Kept on purpose").
                 ListItem(
                     headlineContent = {
                         Text(
@@ -325,45 +294,11 @@ fun SettingsScreen(navController: NavController) {
                     },
                     modifier =
                     Modifier
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable {
                             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
                             intent.data =
-                                android.net.Uri.parse("https://github.com/SagerNet/sing-box-for-android")
-                            context.startActivity(intent)
-                        },
-                    colors =
-                    ListItemDefaults.colors(
-                        containerColor = Color.Transparent,
-                    ),
-                )
-
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            stringResource(R.string.sponsor),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    },
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Outlined.Favorite,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    },
-                    trailingContent = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                    modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
-                        .clickable {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
-                            intent.data = android.net.Uri.parse("https://sekai.icu/sponsors/")
+                                android.net.Uri.parse(io.nekohasekai.sfa.BuildConfig.SOURCE_URL)
                             context.startActivity(intent)
                         },
                     colors =

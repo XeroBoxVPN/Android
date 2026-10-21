@@ -51,8 +51,8 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
 
     private val notificationBuilder by lazy {
         NotificationCompat.Builder(service, notificationChannel).setShowWhen(false).setOngoing(true)
-            .setContentTitle("sing-box").setOnlyAlertOnce(true)
-            .setSmallIcon(R.drawable.ic_menu)
+            .setContentTitle("XeroBox").setOnlyAlertOnce(true)
+            .setSmallIcon(R.drawable.ic_stat_xerobox)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(
                 PendingIntent.getActivity(
@@ -94,7 +94,7 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
         service.startForeground(
             notificationId,
             notificationBuilder
-                .setContentTitle(lastProfileName.takeIf { it.isNotBlank() } ?: "sing-box")
+                .setContentTitle(lastProfileName.takeIf { it.isNotBlank() } ?: "XeroBox")
                 .setContentText(service.getString(contentTextId)).build(),
         )
     }

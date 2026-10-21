@@ -28,6 +28,9 @@ import io.nekohasekai.libbox.PlatformInterface
 import io.nekohasekai.libbox.SystemProxyStatus
 import io.nekohasekai.sfa.Application
 import io.nekohasekai.sfa.R
+import io.nekohasekai.sfa.panel.PanelNotifier
+import io.nekohasekai.sfa.panel.PanelSync
+import io.nekohasekai.sfa.panel.QuotaGuard
 import io.nekohasekai.sfa.compose.MainActivity
 import io.nekohasekai.sfa.constant.Action
 import io.nekohasekai.sfa.constant.Alert
@@ -35,6 +38,7 @@ import io.nekohasekai.sfa.constant.Status
 import io.nekohasekai.sfa.database.ProfileManager
 import io.nekohasekai.sfa.database.Settings
 import io.nekohasekai.sfa.ktx.hasPermission
+import io.nekohasekai.sfa.utils.ConfigCodec
 import io.nekohasekai.sfa.vendor.Vendor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -118,6 +122,12 @@ class BoxService(private val service: Service, private val platformInterface: Pl
 
     private var lastProfileName = ""
 
+    init {
+        // ADD-ON HOOK: VPN state changes (Stopped / Starting / Connected / Stopping) go to
+        // add-on libraries here. Kept after lastProfileName so the first event has a name.
+        status.observeForever { io.nekohasekai.sfa.ext.Extensions.onVpnStatus(it, lastProfileName) }
+    }
+
     private suspend fun startService() {
         try {
             withContext(Dispatchers.Main) {
@@ -136,7 +146,9 @@ class BoxService(private val service: Service, private val platformInterface: Pl
                 return
             }
 
-            val content = File(profile.typed.path).readText()
+            // Decode is a no-op on plain JSON; an ENC1: file (e.g. pasted into the
+            // editor) must still start.
+            val content = ConfigCodec.decode(File(profile.typed.path).readText())
             if (content.isBlank()) {
                 stopAndAlert(Alert.EmptyConfiguration)
                 return
@@ -145,6 +157,12 @@ class BoxService(private val service: Service, private val platformInterface: Pl
             lastProfileName = profile.name
             withContext(Dispatchers.Main) {
                 notification.show(lastProfileName, R.string.status_starting)
+            }
+
+            // A personal config whose account has no data left (or expired) must not connect.
+            QuotaGuard.refusal()?.let {
+                stopAndAlert(Alert.DataExhausted, it)
+                return
             }
 
             DefaultNetworkMonitor.start()
@@ -189,13 +207,28 @@ class BoxService(private val service: Service, private val platformInterface: Pl
                 notification.show(lastProfileName, R.string.status_started)
             }
             notification.start()
+            startQuotaGuard()
         } catch (e: Exception) {
             stopAndAlert(Alert.StartService, e.message)
             return
         }
     }
 
+    /** Stops the VPN the moment the account's data runs out (see QuotaGuard). */
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun startQuotaGuard() {
+        QuotaGuard.start(idleModeScope) { reason ->
+            GlobalScope.launch(Dispatchers.IO) {
+                val message = reason.ifEmpty { service.getString(R.string.quota_used_up) }
+                PanelNotifier.quotaStopped(service, message)
+                PanelSync.syncInBackground()
+                stopAndAlert(Alert.DataExhausted, message)
+            }
+        }
+    }
+
     override fun serviceStop() {
+        QuotaGuard.stop()
         notification.close()
         status.postValue(Status.Starting)
         val pfd = fileDescriptor
@@ -225,12 +258,16 @@ class BoxService(private val service: Service, private val platformInterface: Pl
             return
         }
 
-        val content = File(profile.typed.path).readText()
+        val content = ConfigCodec.decode(File(profile.typed.path).readText())
         if (content.isBlank()) {
             stopAndAlert(Alert.EmptyConfiguration)
             return
         }
         lastProfileName = profile.name
+        QuotaGuard.refusal()?.let {
+            stopAndAlert(Alert.DataExhausted, it)
+            return
+        }
         try {
             commandServer.startOrReloadService(
                 content,
@@ -263,6 +300,7 @@ class BoxService(private val service: Service, private val platformInterface: Pl
                 return
             }
         }
+        startQuotaGuard() // the selected profile may have changed
     }
 
     override fun getSystemProxyStatus(): SystemProxyStatus? {
@@ -288,6 +326,7 @@ class BoxService(private val service: Service, private val platformInterface: Pl
     @OptIn(DelicateCoroutinesApi::class)
     private fun stopService() {
         if (status.value != Status.Started) return
+        QuotaGuard.stop()
         status.value = Status.Stopping
         if (receiverRegistered) {
             service.unregisterReceiver(receiver)
@@ -326,6 +365,7 @@ class BoxService(private val service: Service, private val platformInterface: Pl
     }
 
     private suspend fun stopAndAlert(type: Alert, message: String? = null) {
+        QuotaGuard.stop()
         Settings.startedByUser = false
         Settings.dataStore.flush()
         val pfd = fileDescriptor
@@ -373,6 +413,12 @@ class BoxService(private val service: Service, private val platformInterface: Pl
             receiverRegistered = true
         }
 
+        // Go foreground before anything that can fail: if startCommandServer() throws,
+        // stopAndAlert() stops the service, and a service started with
+        // startForegroundService() that never called startForeground() crashes the app
+        // instead of showing the alert. startService() shows it again; that is harmless.
+        notification.show(lastProfileName, R.string.status_starting)
+
         GlobalScope.launch(Dispatchers.IO) {
             Settings.startedByUser = true
             try {
@@ -403,7 +449,7 @@ class BoxService(private val service: Service, private val platformInterface: Pl
         val builder =
             NotificationCompat.Builder(service, channel).setShowWhen(false)
                 .setContentTitle(notification.title).setContentText(notification.body)
-                .setOnlyAlertOnce(true).setSmallIcon(R.drawable.ic_menu)
+                .setOnlyAlertOnce(true).setSmallIcon(R.drawable.ic_stat_xerobox)
                 .setCategory(NotificationCompat.CATEGORY_EVENT)
                 .setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true)
         if (!notification.subtitle.isNullOrBlank()) {

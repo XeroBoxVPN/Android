@@ -13,3 +13,5 @@ local.properties
 /service-account-credentials.json
 /CLAUDE.md
 /.claude/
+*.jks
+*.keystore

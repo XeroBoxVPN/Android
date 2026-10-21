@@ -15,8 +15,6 @@ import io.nekohasekai.sfa.update.UpdateCheckException
 import io.nekohasekai.sfa.update.UpdateInfo
 import io.nekohasekai.sfa.update.UpdateSource
 import io.nekohasekai.sfa.update.UpdateState
-import io.nekohasekai.sfa.update.UpdateTrack
-import io.nekohasekai.sfa.update.checkFDroidUpdate
 
 object Vendor : VendorInterface {
     private const val TAG = "Vendor"
@@ -97,17 +95,10 @@ object Vendor : VendorInterface {
 
     override val hasCustomUpdate = true
 
-    override val updateSources = listOf(UpdateSource.GITHUB, UpdateSource.FDROID)
+    // One source: the XeroBox server, with GitHub as its fallback (no source picker in Settings).
+    override val updateSources = listOf(UpdateSource.GITHUB)
 
-    override fun checkUpdateAsync(): UpdateInfo? = when (UpdateSource.fromString(Settings.updateSource)) {
-        UpdateSource.FDROID -> checkFDroidUpdate(Application.application)
-        UpdateSource.GITHUB -> {
-            val track = UpdateTrack.fromString(Settings.updateTrack)
-            GitHubUpdateChecker().use { checker ->
-                checker.checkUpdate(track, Settings.githubToken)
-            }
-        }
-    }
+    override fun checkUpdateAsync(): UpdateInfo? = XeroBoxUpdates.check()
 
     override fun scheduleAutoUpdate() {
         UpdateWorker.schedule(io.nekohasekai.sfa.Application.application)
