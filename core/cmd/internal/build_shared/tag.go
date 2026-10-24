@@ -1,6 +1,8 @@
 package build_shared
 
 import (
+	"os"
+
 	"github.com/sagernet/sing-box/common/badversion"
 	"github.com/sagernet/sing/common"
 	F "github.com/sagernet/sing/common/format"
@@ -8,6 +10,11 @@ import (
 )
 
 func ReadTag() (string, error) {
+	// XeroBox: core/ lives inside the app repository, whose tags are the app's, so the build
+	// passes the core version explicitly (version.properties CORE_VERSION).
+	if version := os.Getenv("XEROBOX_CORE_VERSION"); version != "" {
+		return version, nil
+	}
 	currentTag, err := shell.Exec("git", "describe", "--tags").ReadOutput()
 	if err != nil {
 		return currentTag, err

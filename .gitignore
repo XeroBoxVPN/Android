@@ -23,3 +23,7 @@ local.properties
 *.p12
 *.pem
 keys/
+
+# The VPN core (core/) keeps its own .gitignore; these are core source, not build output or keys.
+!core/cmd/internal/build/
+!core/common/certificate/*.pem

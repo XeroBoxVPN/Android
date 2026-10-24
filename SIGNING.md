@@ -6,8 +6,7 @@
 - The key is the app's identity. Android installs an update **only if it is signed with the same
   key** as the installed app. With the direct-APK route, **a lost key means no updates for your
   existing users, ever**: they'd have to uninstall and reinstall. Back the key up.
-- Our build signs with APK Signature Scheme v2 and v3 automatically. The `otherLegacy` build
-  (minSdk 21) also gets v1. Nothing to configure.
+- Our build signs with APK Signature Scheme v2 and v3 automatically. Nothing to configure.
 - Today's test APKs (`VPN-v1-debug-*.apk`) use the **debug key** on this PC. Testers who install
   them must uninstall before installing a release-signed build.
 
@@ -52,9 +51,9 @@ weak key can be replaced while users keep updating. Do it only when needed.
    and later releases upgrade over each other.
 4. **Build and check:**
    ```bash
-   ./gradlew --console=plain assembleOtherRelease
+   ./gradlew --console=plain assembleRelease
    "$ANDROID_HOME/build-tools/37.0.0/apksigner.bat" verify --print-certs \
-     app/build/outputs/apk/other/release/XeroBox-*-arm64-v8a.apk
+     app/build/outputs/apk/release/XeroBox-*-arm64-v8a.apk
    ```
    Note the **SHA-256 certificate digest**. The update system (`UPDATE_PLAN.md`, phase 4) checks
    downloads against it, and it is what you register in the next step.

@@ -6,7 +6,7 @@ XeroBox for Android is a modified version of **sing-box for Android (SFA)**:
 https://github.com/SagerNet/sing-box-for-android, Copyright (C) 2022 by nekohasekai
 <contact-sagernet@sekai.icu>, licensed under GPL-3.0-or-later.
 
-The VPN engine (`libbox`) is built from **xerobox-core**, a modified version of **sing-box**:
+The VPN engine (`libbox`) is built from **`core/`** in this repository, a modified version of **sing-box**:
 https://github.com/SagerNet/sing-box, Copyright (C) 2022 by nekohasekai, licensed under
 GPL-3.0-or-later.
 
@@ -24,10 +24,10 @@ In summary:
 - **Panel integration:** sign-in with login or invitation codes; configuration sync with a
   XeroBox panel; invitations and referrals; rewarded ads; bug and crash reports.
 - **Account features:** data-usage display and a traffic guard that stops the VPN when the
-  account runs out; a plan card with Telegram upgrade.
+  account runs out; a plan card; purchase / upgrade codes checked by the panel; a QR code for the official download page.
 - **Updates:** the update source moved to the XeroBox panel and this repository.
+- **One build:** the upstream Play and Android 5–6 variants were removed.
 - **Removed screens:** the remote-control, core-settings and privilege settings screens.
-- **Play build:** location and "query all packages" permissions removed.
 
 ## Third-party components
 

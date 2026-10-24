@@ -5,7 +5,7 @@ invitation code, receives its VPN configurations from the panel and keeps them i
 the account's plan and data, and stops the connection when the data runs out.
 
 This app is a modified version of **SFA** (sing-box for Android) by nekohasekai / SagerNet. The
-VPN engine is a modified **sing-box** ([xerobox-core](#the-vpn-core-libbox)). XeroBox is not
+VPN engine is a modified **sing-box**, kept in this repository under [`core/`](#the-vpn-core-libbox). XeroBox is not
 affiliated with or endorsed by SagerNet. See [License](#license) and [NOTICE.md](NOTICE.md).
 
 ## Contents
@@ -38,29 +38,20 @@ Android Studio (any recent version) can open and build the project directly once
 ```sh
 git clone https://github.com/<you>/xerobox-android.git
 cd xerobox-android
-# 1. the VPN core: build it (see below) or download libbox.aar from this repo's Releases
-#    and put it in app/libs/ (plus libbox-legacy.aar for the Android 5-6 flavour)
+# 1. the VPN core: build app/libs/libbox.aar from ./core (see below)
 # 2. tell Gradle where the SDK is
 echo "sdk.dir=C:/Users/<you>/AppData/Local/Android/Sdk" > local.properties
 # 3. build a debug APK
-./gradlew assembleOtherDebug
+./gradlew assembleDebug
 ```
 
-Outputs:
+There is **one app build** for every user (website, Telegram, GitHub releases), Android 7 and
+newer. It includes the in-app updater.
 
 | Command | What | Where |
 |---|---|---|
-| `./gradlew assembleOtherDebug` | debug APKs (direct install, Android 7+) | `app/build/outputs/apk/other/debug/` |
-| `./gradlew assembleOtherRelease` | signed release APKs for direct download | `app/build/outputs/apk/other/release/` |
-| `./gradlew bundlePlayRelease` | signed App Bundle for Google Play | `app/build/outputs/bundle/playRelease/` |
-| `./gradlew assemblePlayRelease` | the Play build as APKs, for testing before upload | `app/build/outputs/apk/play/release/` |
-| `./gradlew assembleOtherLegacyRelease` | Android 5–6 build | `app/build/outputs/apk/otherLegacy/release/` |
-
-Flavours:
-- **other**: direct APKs from your own site or GitHub. Includes the in-app updater.
-- **play**: Google Play. It has no self-updater, because Play updates the app. It also leaves
-  out the "see all apps" and location permissions.
-- **otherLegacy**: Android 5–6.
+| `./gradlew assembleDebug` | debug APKs, for testing | `app/build/outputs/apk/debug/` |
+| `./gradlew assembleRelease` | signed release APKs, for users | `app/build/outputs/apk/release/` |
 
 APKs are split per processor: `arm64-v8a` (most phones), `armeabi-v7a` (older and budget
 phones) and `x86_64` (emulators, some Chromebooks).
@@ -107,34 +98,37 @@ what users see).
 
 ## The VPN core (libbox)
 
-`app/libs/libbox.aar` (Android 7+) and `libbox-legacy.aar` (Android 5–6) are the sing-box engine
-compiled for Android. They are large build outputs, so they are not committed. Build them from
-the XeroBox core repository (a fork of sing-box with the XeroBox config codec). Use Git Bash on
-Windows; gomobile fails under PowerShell:
+`app/libs/libbox.aar` is the VPN engine compiled for Android. It is a large build output
+(about 115 MB), so it is not committed. Build it from `core/`, the XeroBox fork of sing-box with
+the XeroBox config codec. Use Git Bash on Windows; gomobile fails under PowerShell:
 
 ```sh
-git clone --branch main-xerobox https://github.com/<you>/xerobox-core.git
-cd xerobox-core
+cd core
 go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
 go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
 export ANDROID_HOME="C:/Users/<you>/AppData/Local/Android/Sdk"
 export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.0.13004108"
 export PATH="$HOME/go/bin:$PATH"
-go run ./cmd/internal/build_libbox -target android     # writes libbox.aar and libbox-legacy.aar
-cp libbox.aar libbox-legacy.aar ../xerobox-android/app/libs/
+# the sing-box version core/ is based on (version.properties CORE_VERSION) + commit
+export XEROBOX_CORE_VERSION="$(grep ^CORE_VERSION= ../version.properties | cut -d= -f2 | tr -d '\r')-$(git rev-parse --short HEAD)"
+go run ./cmd/internal/build_libbox -target android     # writes core/libbox.aar
+mkdir -p ../app/libs && cp libbox.aar ../app/libs/
 ```
 
-The GitHub Actions workflows in `.github/workflows` do the same on every push.
+The GitHub Actions workflow (`.github/workflows/build.yml`) does the same on every push.
 
 ## Release builds and signing
 
 See [SIGNING.md](SIGNING.md) to create the signing (upload) key. In short:
 
 1. Bump `VERSION_CODE` / `VERSION_NAME` in `version.properties`.
-2. `./gradlew bundlePlayRelease assembleOtherRelease`.
+2. `./gradlew assembleRelease` (or push a tag `v1.2.3`: the workflow builds and attaches them).
 3. Test the release APKs on real phones.
-4. Upload the `.aab` to Play Console (internal testing first). Publish the APKs, and their
-   SHA-256 checksums, on GitHub Releases.
+4. Publish the APKs and their SHA-256 checksums on your download page and GitHub Releases.
+
+Google Play is not a target of this build. A Play listing would need its own compliance work
+(no self-updater, Play Billing instead of outside purchase codes, fewer permissions); see the
+deployment documentation.
 
 ## Keeping up with upstream
 
@@ -143,15 +137,21 @@ git remote add upstream https://github.com/SagerNet/sing-box-for-android.git   #
 git fetch upstream --tags
 git checkout -b merge-upstream-1.15.x main-xerobox
 git merge <upstream tag>                 # resolve conflicts, keeping XeroBox changes
-./gradlew assembleOtherDebug             # build and test before merging back
+./gradlew assembleDebug                  # build and test before merging back
 git checkout main-xerobox && git merge merge-upstream-1.15.x
 ```
 
 Most XeroBox code lives in its own files (`panel/`, `licensing/`, `config/`, `ext/`, the
 `*Card.kt` dashboard cards, `AccountScreen.kt`, `InviteScreen.kt`, `ReportProblemScreen.kt`).
 Conflicts are limited to the upstream files XeroBox changed: navigation, settings, dashboard,
-`BoxService.kt`, strings, manifests, the build script. Update the core (`xerobox-core`) to the
-matching sing-box version in the same step.
+`BoxService.kt`, strings, manifests, the build script. Update the core to the matching sing-box
+version in the same step; it lives in `core/` with its full history, so a subtree pull merges it:
+
+```sh
+git remote add sing-box https://github.com/SagerNet/sing-box.git   # once
+git fetch sing-box --tags
+git subtree pull --prefix core sing-box <sing-box tag>   # resolve conflicts, keeping XeroBox changes
+```
 
 ## Troubleshooting
 
@@ -164,7 +164,7 @@ matching sing-box version in the same step.
 | Sign-in says it can't reach the server (release build) | `XEROBOX_SERVER_URL` must be `https://` and reachable from the phone. |
 | Sign-in on the emulator fails on Android 17 | Allow the "nearby devices / local network" permission when asked (needed for 10.0.2.2). |
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | A build signed with another key is installed: uninstall it first (`adb uninstall com.xerobox.vpn`). |
-| Release build crashes but debug works | R8 shrinking: check `app/proguard-rules.pro`; run `assemblePlayRelease` on an emulator and read `adb logcat`. |
+| Release build crashes but debug works | R8 shrinking: check `app/proguard-rules.pro`; run `assembleRelease` on an emulator and read `adb logcat`. |
 
 ## License
 
@@ -193,5 +193,4 @@ with this application without prior consent.
 
 As that notice requires, this fork is published under its own name, XeroBox, and does not use
 the names SFA or sing-box for itself. Anyone who receives the app, from Google Play or as an
-APK, can get the complete corresponding source code here, including the VPN core
-(`xerobox-core`).
+APK, can get the complete corresponding source code here, including the VPN core (`core/`).
