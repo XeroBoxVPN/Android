@@ -29,6 +29,8 @@ import io.nekohasekai.sfa.compose.screen.settings.FDroidMirrorScreen
 import io.nekohasekai.sfa.compose.screen.settings.AccountScreen
 import io.nekohasekai.sfa.compose.screen.settings.InviteScreen
 import io.nekohasekai.sfa.compose.screen.settings.ReportProblemScreen
+import io.nekohasekai.sfa.compose.screen.settings.RedeemCodeScreen
+import io.nekohasekai.sfa.compose.screen.settings.DownloadAppScreen
 import io.nekohasekai.sfa.compose.screen.settings.ProfileOverrideScreen
 import io.nekohasekai.sfa.compose.screen.settings.ServiceSettingsScreen
 import io.nekohasekai.sfa.compose.screen.settings.SettingsScreen
@@ -656,6 +658,26 @@ fun NavHost(
             popExitTransition = slideOutToRight,
         ) {
             ReportProblemScreen(navController = navController)
+        }
+
+        composable(
+            route = "settings/redeem",
+            enterTransition = slideInFromRight,
+            exitTransition = slideOutToLeft,
+            popEnterTransition = slideInFromLeft,
+            popExitTransition = slideOutToRight,
+        ) {
+            RedeemCodeScreen(navController = navController)
+        }
+
+        composable(
+            route = "settings/download",
+            enterTransition = slideInFromRight,
+            exitTransition = slideOutToLeft,
+            popEnterTransition = slideInFromLeft,
+            popExitTransition = slideOutToRight,
+        ) {
+            DownloadAppScreen(navController = navController)
         }
 
 

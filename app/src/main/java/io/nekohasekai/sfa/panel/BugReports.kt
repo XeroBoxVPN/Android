@@ -66,7 +66,7 @@ object BugReports {
         .put(
             "info",
             JSONObject()
-                .put("build", BuildConfig.BUILD_TYPE + "/" + BuildConfig.FLAVOR)
+                .put("build", BuildConfig.BUILD_TYPE)
                 .put("abi", Build.SUPPORTED_ABIS.firstOrNull().orEmpty())
                 .put("locale", Locale.getDefault().toLanguageTag())
                 .put("core", runCatching { Libbox.version() }.getOrDefault(""))

@@ -120,6 +120,27 @@ object PanelClient {
             is PanelResult.NetworkError -> result
         }
 
+    /** Redeems a purchase / upgrade code; the server checks it (POST /api/v1/codes/redeem). */
+    suspend fun redeem(serverUrl: String, token: String, code: String): PanelResult<RedeemResult> =
+        when (val result = request(serverUrl, "/api/v1/codes/redeem", token, JSONObject().put("code", code))) {
+            is PanelResult.Success -> PanelResult.Success(
+                RedeemResult(
+                    result = result.value?.str("result").orEmpty(),
+                    account = PanelAccount.fromJson(result.value?.optJSONObject("account")),
+                ),
+            )
+            is PanelResult.ApiError -> result
+            is PanelResult.NetworkError -> result
+        }
+
+    /** The panel's public info, including the central links; no sign-in needed (GET /api/v1/info). */
+    suspend fun links(serverUrl: String): PanelResult<PanelLinks> =
+        when (val result = request(serverUrl, "/api/v1/info", null, null)) {
+            is PanelResult.Success -> PanelResult.Success(PanelLinks.fromJson(result.value?.optJSONObject("links")) ?: PanelLinks())
+            is PanelResult.ApiError -> result
+            is PanelResult.NetworkError -> result
+        }
+
     /** Deletes the signed-in account and its data on the server (POST /api/v1/account/delete). */
     suspend fun deleteAccount(serverUrl: String, token: String): PanelResult<Unit> =
         when (val result = request(serverUrl, "/api/v1/account/delete", token, JSONObject().put("confirm", "DELETE"))) {

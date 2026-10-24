@@ -16,7 +16,6 @@ object PackageQueryManager {
     val strategy: PackageQueryStrategy
         get() = when {
             HookStatusClient.status.value?.active == true -> PackageQueryStrategy.ForcedRoot
-            BuildConfig.FLAVOR == "play" -> PackageQueryStrategy.UserSelected(queryMode.value)
             else -> PackageQueryStrategy.Direct
         }
 

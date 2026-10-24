@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.QrCode2
+import androidx.compose.material.icons.outlined.Redeem
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.FilterAlt
@@ -194,7 +196,26 @@ fun SettingsScreen(navController: NavController) {
                             containerColor = Color.Transparent,
                         ),
                     )
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.redeem_title), style = MaterialTheme.typography.bodyLarge) },
+                        supportingContent = { Text(stringResource(R.string.redeem_subtitle), style = MaterialTheme.typography.bodySmall) },
+                        leadingContent = {
+                            Icon(imageVector = Icons.Outlined.Redeem, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        modifier = Modifier.clickable { navController.navigate("settings/redeem") },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    )
                 }
+
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.download_title), style = MaterialTheme.typography.bodyLarge) },
+                    supportingContent = { Text(stringResource(R.string.download_subtitle), style = MaterialTheme.typography.bodySmall) },
+                    leadingContent = {
+                        Icon(imageVector = Icons.Outlined.QrCode2, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    modifier = Modifier.clickable { navController.navigate("settings/download") },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
 
                 ListItem(
                     headlineContent = {

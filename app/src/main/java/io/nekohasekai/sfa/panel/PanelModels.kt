@@ -163,6 +163,8 @@ data class SyncResponse(
     val adJson: JSONObject?,
     val notices: List<PanelNotice>,
     val syncIntervalMinutes: Int,
+    /** Central public addresses (download page, purchase page, Telegram); null on older servers. */
+    val links: PanelLinks? = null,
 ) {
     companion object {
         const val DEFAULT_SYNC_INTERVAL_MINUTES = 30
@@ -195,10 +197,45 @@ data class SyncResponse(
                 },
                 syncIntervalMinutes = obj.optInt("sync_interval_minutes", DEFAULT_SYNC_INTERVAL_MINUTES)
                     .coerceIn(1, 24 * 60),
+                links = PanelLinks.fromJson(obj.optJSONObject("links")),
             )
         }
     }
 }
+
+/**
+ * Public addresses set centrally in the panel (dashboard → Settings → App links). Empty when
+ * not configured yet; only https addresses are used.
+ */
+data class PanelLinks(
+    val downloadUrl: String = "",
+    val purchaseUrl: String = "",
+    val telegramUrl: String = "",
+    val supportUrl: String = "",
+) {
+    fun toJson(): JSONObject = JSONObject()
+        .put("download_url", downloadUrl)
+        .put("purchase_url", purchaseUrl)
+        .put("telegram_url", telegramUrl)
+        .put("support_url", supportUrl)
+
+    companion object {
+        private fun https(v: String): String = v.trim().takeIf { it.startsWith("https://") }.orEmpty()
+
+        fun fromJson(obj: JSONObject?): PanelLinks? {
+            obj ?: return null
+            return PanelLinks(
+                downloadUrl = https(obj.str("download_url")),
+                purchaseUrl = https(obj.str("purchase_url")),
+                telegramUrl = https(obj.str("telegram_url")),
+                supportUrl = https(obj.str("support_url")),
+            )
+        }
+    }
+}
+
+/** A redeemed purchase code: what it did ("Premium until …") and the updated account. */
+data class RedeemResult(val result: String, val account: PanelAccount?)
 
 /** [loginCode] is set only when an invite code created a new account: the user needs it on other devices. */
 data class LoginResponse(val token: String, val account: PanelAccount?, val loginCode: String)

@@ -113,7 +113,7 @@ fun AccountScreen(navController: NavController) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (state.signedIn) {
-            SignedInContent(state)
+            SignedInContent(state, navController)
         } else {
             SignInCard(state)
         }
@@ -248,7 +248,7 @@ private fun needsLocalNetworkPermission(context: Context, serverUrl: String): Bo
 }
 
 @Composable
-private fun SignedInContent(state: PanelState) {
+private fun SignedInContent(state: PanelState, navController: NavController) {
     val scope = rememberCoroutineScope()
     var confirmSignOut by rememberSaveable { mutableStateOf(false) }
     var signingOut by rememberSaveable { mutableStateOf(false) }
@@ -321,7 +321,7 @@ private fun SignedInContent(state: PanelState) {
         }
     }
 
-    account?.plan?.let { PlanCard(it) }
+    account?.plan?.let { PlanCard(it, state.links, navController) }
 
     account?.traffic?.let { TrafficCard(traffic = it) }
 
@@ -409,7 +409,7 @@ private fun SignedInContent(state: PanelState) {
 
 /** The plan, and the way to buy or renew one: the Telegram bot, linked to this account in one tap. */
 @Composable
-private fun PlanCard(plan: PanelPlan) {
+private fun PlanCard(plan: PanelPlan, links: io.nekohasekai.sfa.panel.PanelLinks, navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by rememberSaveable { mutableStateOf(false) }
@@ -443,16 +443,26 @@ private fun PlanCard(plan: PanelPlan) {
                 }
             }
             Text(
-                text = stringResource(if (io.nekohasekai.sfa.BuildConfig.EXTERNAL_PURCHASE) R.string.plan_body else R.string.plan_status_only),
+                text = stringResource(R.string.plan_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (!io.nekohasekai.sfa.BuildConfig.EXTERNAL_PURCHASE) return@Column // store build: no purchase outside the store
             error?.let {
                 Text(text = it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
             Button(
+                onClick = { navController.navigate("settings/redeem") },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) { Text(stringResource(R.string.plan_enter_code)) }
+            // Where to get a code: the panel's purchase page or Telegram link; without them, the
+            // Telegram bot (one-time link to this account).
+            val buy = links.purchaseUrl.ifEmpty { links.telegramUrl }
+            OutlinedButton(
                 onClick = {
+                    if (buy.isNotEmpty()) {
+                        openLink(context, buy)
+                        return@OutlinedButton
+                    }
                     busy = true
                     error = null
                     scope.launch {
@@ -472,10 +482,10 @@ private fun PlanCard(plan: PanelPlan) {
                 modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
                 if (busy) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(10.dp))
                 }
-                Text(stringResource(if (plan.paid) R.string.plan_renew else R.string.plan_upgrade))
+                Text(stringResource(if (plan.paid) R.string.plan_renew else R.string.plan_get_code))
             }
         }
     }

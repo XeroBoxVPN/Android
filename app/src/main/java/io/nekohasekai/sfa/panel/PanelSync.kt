@@ -48,6 +48,8 @@ data class PanelState(
     val managedProfiles: Int = 0,
     /** This account's own login code, when known (see [PanelStore.loginCode]). */
     val loginCode: String = "",
+    /** Central public addresses from the panel (download page, purchase page, Telegram). */
+    val links: PanelLinks = PanelLinks(),
 ) {
     /** Whether any ad may show: the panel policy when signed in, the build config otherwise. */
     val adsAllowed: Boolean get() = if (signedIn) policy.ads && AdConfig.ADS_ENABLED else AdConfig.hasAnyAd()
@@ -86,6 +88,7 @@ object PanelSync {
             lastSync = PanelStore.lastSync,
             managedProfiles = PanelStore.mapping.size,
             loginCode = PanelStore.loginCode,
+            links = PanelStore.links,
         )
     } catch (e: Exception) {
         Log.e(TAG, "load state", e)
@@ -174,6 +177,39 @@ object PanelSync {
      * Refreshes only the data allowance, cheaply, so the dashboard can show usage within
      * seconds. Failures are ignored: the next full sync corrects everything.
      */
+    /**
+     * Sends a purchase / upgrade code to the panel, which checks it and upgrades the account.
+     * Returns (what it did, null) or (null, why not).
+     */
+    suspend fun redeemCode(code: String): Pair<String?, String?> {
+        val server = PanelStore.serverUrl
+        val token = PanelStore.token
+        if (server.isEmpty() || token.isEmpty()) return null to "Sign in first."
+        val trimmed = code.trim()
+        if (trimmed.length < 8) return null to "Enter the code you received."
+        val result = withContext(Dispatchers.IO) { PanelClient.redeem(server, token, trimmed) }
+        return when (result) {
+            is PanelResult.Success -> {
+                result.value.account?.let { acct -> _state.update { it.copy(account = acct) } }
+                syncInBackground() // new plan, data and server configs
+                result.value.result.ifEmpty { "Code accepted." } to null
+            }
+            is PanelResult.ApiError -> null to result.message
+            is PanelResult.NetworkError -> null to "Can't reach the server: ${result.message}"
+        }
+    }
+
+    /** Fetches the central links from the panel's public info (works signed out). */
+    suspend fun refreshLinks() {
+        val server = PanelStore.serverUrl.ifEmpty { builtInServerUrl }
+        if (server.isEmpty()) return
+        val result = withContext(Dispatchers.IO) { PanelClient.links(server) }
+        if (result is PanelResult.Success) {
+            PanelStore.links = result.value
+            _state.update { it.copy(links = result.value) }
+        }
+    }
+
     /** Deletes the account on the server, then signs out here. Returns an error message, or null. */
     suspend fun deleteAccount(): String? {
         val server = PanelStore.serverUrl
@@ -360,6 +396,7 @@ object PanelSync {
         val intervalChanged = PanelStore.syncIntervalMinutes != response.syncIntervalMinutes
         PanelStore.syncIntervalMinutes = response.syncIntervalMinutes
         PanelStore.saveSnapshot(response.account, response.policy, response.adJson)
+        response.links?.let { PanelStore.links = it }
         PanelStore.lastSync = System.currentTimeMillis()
 
         if (response.policy.notify) {

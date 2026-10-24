@@ -28,6 +28,7 @@ object PanelStore {
     private const val KEY_ACCOUNT = "account"
     private const val KEY_POLICY = "policy"
     private const val KEY_AD = "ad"
+    private const val KEY_LINKS = "links"
     private const val KEY_LOGIN_CODE = "login_code"
     private const val KEY_AUTO_CRASH_REPORTS = "auto_crash_reports"
 
@@ -127,6 +128,11 @@ object PanelStore {
     fun loadPolicy(): PanelPolicy = PanelPolicy.fromJson(jsonOrNull(KEY_POLICY))
 
     fun loadAdJson(): JSONObject? = jsonOrNull(KEY_AD)
+
+    /** The panel's central links. Kept across sign-outs: the download page works signed out too. */
+    var links: PanelLinks
+        get() = PanelLinks.fromJson(jsonOrNull(KEY_LINKS)) ?: PanelLinks()
+        set(value) = prefs.edit().putString(KEY_LINKS, value.toJson().toString()).apply()
 
     /** Signs out locally. Keeps the server URL and device id for the next sign-in. */
     fun clearSession() {
