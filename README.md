@@ -36,8 +36,8 @@ Android Studio (any recent version) can open and build the project directly once
 ## Build
 
 ```sh
-git clone https://github.com/<you>/xerobox-android.git
-cd xerobox-android
+git clone https://github.com/<you>/android.git
+cd android
 # 1. the VPN core: build app/libs/libbox.aar from ./core (see below)
 # 2. tell Gradle where the SDK is
 echo "sdk.dir=C:/Users/<you>/AppData/Local/Android/Sdk" > local.properties
@@ -69,9 +69,9 @@ XEROBOX_SERVER_URL=https://api.example.com
 # Android package name. Changing it later makes a different app (users must reinstall).
 XEROBOX_APP_ID=com.xerobox.vpn
 # owner/repo whose GitHub releases are the fallback update source (optional)
-XEROBOX_GITHUB_REPO=<you>/xerobox-android
+XEROBOX_GITHUB_REPO=<you>/android
 # Source code link shown in Settings → About (GPL). Default: the repo above.
-XEROBOX_SOURCE_URL=https://github.com/<you>/xerobox-android
+XEROBOX_SOURCE_URL=https://github.com/<you>/android
 
 # Release signing (see SIGNING.md). Never commit these or the .jks file.
 KEYSTORE_FILE=C:/Users/<you>/keys/xerobox-upload.jks
@@ -93,8 +93,10 @@ Branding:
 - **Colours:** `values/xero_colors.xml`.
 - **Logo:** `compose/component/XMark.kt`.
 
-Versioning: `version.properties` (`VERSION_CODE` must go up with every release; `VERSION_NAME` is
-what users see).
+Versioning: `version.properties`. `VERSION_CODE` (a whole number, 1 for 1.0.0) must go up by at
+least 1 with every release, and `VERSION_NAME` (what users see, `MAJOR.MINOR.PATCH`) must go up
+too: the panel compares the code, the GitHub-release fallback compares the name. A release tag is
+`v` + `VERSION_NAME` (`v1.0.0`); the workflow refuses a tag that doesn't match.
 
 ## The VPN core (libbox)
 
@@ -122,7 +124,9 @@ The GitHub Actions workflow (`.github/workflows/build.yml`) does the same on eve
 See [SIGNING.md](SIGNING.md) to create the signing (upload) key. In short:
 
 1. Bump `VERSION_CODE` / `VERSION_NAME` in `version.properties`.
-2. `./gradlew assembleRelease` (or push a tag `v1.2.3`: the workflow builds and attaches them).
+2. `./gradlew assembleRelease` (or push a tag `v` + `VERSION_NAME`, e.g. `v1.0.1`: the workflow
+   builds the APKs and attaches them with `XeroBox-version-metadata.json`, which the in-app
+   GitHub update check needs).
 3. Test the release APKs on real phones.
 4. Publish the APKs and their SHA-256 checksums on your download page and GitHub Releases.
 

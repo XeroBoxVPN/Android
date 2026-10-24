@@ -52,6 +52,15 @@ jobs:
           mkdir -p ../app/libs
           cp libbox.aar ../app/libs/
 
+      - name: Check the tag matches version.properties (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          name="$(grep ^VERSION_NAME= version.properties | cut -d= -f2 | tr -d '\r')"
+          if [ "${{ github.ref_name }}" != "v$name" ]; then
+            echo "Tag ${{ github.ref_name }} does not match VERSION_NAME=$name (expected v$name)"
+            exit 1
+          fi
+
       - name: Configure
         run: |
           {
@@ -89,6 +98,10 @@ jobs:
         run: |
           mkdir out
           find app/build/outputs -name "*.apk" -exec cp {} out/ \;
+          code="$(grep ^VERSION_CODE= version.properties | cut -d= -f2 | tr -d '\r')"
+          name="$(grep ^VERSION_NAME= version.properties | cut -d= -f2 | tr -d '\r')"
+          # Read by the app's GitHub update check (GitHubUpdateChecker.kt) on every release.
+          printf '{"version_code": %s, "version_name": "%s"}\n' "$code" "$name" > out/XeroBox-version-metadata.json
           cd out && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
 
       - uses: actions/upload-artifact@v4
@@ -104,4 +117,4 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" --title "XeroBox ${{ github.ref_name }}" \
             --notes "Download the APK for your phone (arm64-v8a for most phones, armeabi-v7a for older ones). Verify with SHA256SUMS.txt." \
-            out/*.apk out/SHA256SUMS.txt
+            out/*.apk out/XeroBox-version-metadata.json out/SHA256SUMS.txt
