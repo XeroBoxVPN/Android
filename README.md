@@ -36,7 +36,7 @@ Android Studio (any recent version) can open and build the project directly once
 ## Build
 
 ```sh
-git clone https://github.com/<you>/Android.git
+git clone https://github.com/XeroBoxVPN/Android.git
 cd Android
 # 1. the VPN core: build app/libs/libbox.aar from ./core (see below)
 # 2. tell Gradle where the SDK is
@@ -69,9 +69,9 @@ XEROBOX_SERVER_URL=https://api.example.com
 # Android package name. Changing it later makes a different app (users must reinstall).
 XEROBOX_APP_ID=com.xerobox.vpn
 # owner/repo whose GitHub releases are the fallback update source (optional)
-XEROBOX_GITHUB_REPO=<you>/Android
+XEROBOX_GITHUB_REPO=XeroBoxVPN/Android
 # Source code link shown in Settings → About (GPL). Default: the repo above.
-XEROBOX_SOURCE_URL=https://github.com/<you>/Android
+XEROBOX_SOURCE_URL=https://github.com/XeroBoxVPN/Android
 
 # Release signing (see SIGNING.md). Never commit these or the .jks file.
 KEYSTORE_FILE=C:/Users/<you>/keys/xerobox-upload.jks
