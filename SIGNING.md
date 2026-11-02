@@ -40,7 +40,7 @@ weak key can be replaced while users keep updating. Do it only when needed.
    Keep the `.jks` **outside** the project folder. `*.jks` and `*.keystore` are git-ignored anyway.
 3. **Tell the build where it is.** Add to `sing-box-for-android\local.properties`, which is git-ignored:
    ```properties
-   KEYSTORE_FILE=D:/xerobox-keys/xerobox-release.jks
+   KEYSTORE_FILE=C:/Users/Name/xerobox-keys/xerobox-release.jks
    KEYSTORE_PASS=…
    ALIAS_NAME=xerobox
    ALIAS_PASS=…
