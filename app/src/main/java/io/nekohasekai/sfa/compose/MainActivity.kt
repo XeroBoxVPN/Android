@@ -112,6 +112,8 @@ import io.nekohasekai.sfa.compose.component.RemoteStatusBar
 import io.nekohasekai.sfa.compose.component.ServiceStatusBar
 import io.nekohasekai.sfa.compose.component.SnackbarHost
 import io.nekohasekai.sfa.compose.component.UpdateAvailableDialog
+import io.nekohasekai.sfa.compose.screen.UpdateRequiredScreen
+import io.nekohasekai.sfa.panel.ForceUpdate
 import io.nekohasekai.sfa.compose.component.UptimeText
 import io.nekohasekai.sfa.compose.model.Connection
 import io.nekohasekai.sfa.compose.navigation.NavHost
@@ -248,6 +250,8 @@ class MainActivity :
             connection.reconnect()
 
             UpdateState.loadFromCache()
+            // A forced update is checked on every start, even with automatic checks off.
+            lifecycleScope.launch(Dispatchers.IO) { ForceUpdate.refresh() }
             if (Settings.checkUpdateEnabled) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
@@ -263,9 +267,14 @@ class MainActivity :
 
             setContent {
                 Theme {
-                    // XeroBox asks for a login or invitation code before anything else.
+                    // XeroBox asks for a login or invitation code before anything else, and
+                    // a version the server no longer accepts shows only the update screen.
                     val panel by PanelSync.state.collectAsState()
-                    if (panel.signedIn) {
+                    val requiredUpdate by ForceUpdate.state.collectAsState()
+                    val required = requiredUpdate
+                    if (required != null) {
+                        UpdateRequiredScreen(required)
+                    } else if (panel.signedIn) {
                         App()
                     } else {
                         FirstLaunchSignIn(panel)
@@ -1597,6 +1606,7 @@ class MainActivity :
                 Alert.CreateService -> stringResource(R.string.error_create_service)
                 Alert.StartService -> stringResource(R.string.error_start_service)
                 Alert.DataExhausted -> stringResource(R.string.quota_title)
+                Alert.UpdateRequired -> stringResource(R.string.force_update_title)
                 else -> null
             }
 

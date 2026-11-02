@@ -11,4 +11,7 @@ enum class Alert {
 
     /** A personal config's account has no data left, expired or is suspended. */
     DataExhausted,
+
+    /** The server requires a newer app version (ForceUpdate). */
+    UpdateRequired,
 }

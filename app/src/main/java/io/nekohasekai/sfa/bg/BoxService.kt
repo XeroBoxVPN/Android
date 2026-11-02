@@ -28,6 +28,7 @@ import io.nekohasekai.libbox.PlatformInterface
 import io.nekohasekai.libbox.SystemProxyStatus
 import io.nekohasekai.sfa.Application
 import io.nekohasekai.sfa.R
+import io.nekohasekai.sfa.panel.ForceUpdate
 import io.nekohasekai.sfa.panel.PanelNotifier
 import io.nekohasekai.sfa.panel.PanelSync
 import io.nekohasekai.sfa.panel.QuotaGuard
@@ -157,6 +158,12 @@ class BoxService(private val service: Service, private val platformInterface: Pl
             lastProfileName = profile.name
             withContext(Dispatchers.Main) {
                 notification.show(lastProfileName, R.string.status_starting)
+            }
+
+            // An app version the server no longer accepts must not connect (ForceUpdate).
+            ForceUpdate.refusalBeforeConnect()?.let {
+                stopAndAlert(Alert.UpdateRequired, it)
+                return
             }
 
             // A personal config whose account has no data left (or expired) must not connect.

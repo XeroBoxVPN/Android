@@ -341,6 +341,7 @@ object PanelSync {
                 .put("app_version", BuildConfig.VERSION_NAME)
                 .put("api_version", PanelClient.API_VERSION)
                 .put("connected", Extensions.vpnState == ExtVpnState.Connected)
+            ForceUpdate.putVersion(body)
             // ADD-ON HOOK: data from add-on libraries rides along with every sync and is
             // stored per device on the panel ("extensions" in panel/API.md).
             Extensions.syncPayloads()?.let { body.put("extensions", it) }

@@ -3,6 +3,7 @@ package io.nekohasekai.sfa.update
 import android.os.Build
 import android.net.Uri
 import io.nekohasekai.sfa.BuildConfig
+import io.nekohasekai.sfa.panel.ForceUpdate
 import io.nekohasekai.sfa.utils.HTTPClient
 import org.json.JSONObject
 import java.io.IOException
@@ -42,6 +43,8 @@ object ServerUpdateChecker {
             if (code != HttpURLConnection.HTTP_OK) throw IOException("Update server answered $code")
             val bytes = connection.inputStream.use { it.readNBytesCapped(MAX_RESPONSE_BYTES) }
             val obj = JSONObject(String(bytes, Charsets.UTF_8))
+            // The server answered: it either requires this release now, or requires nothing.
+            if (obj.optBoolean("required", false)) ForceUpdate.record(obj) else ForceUpdate.lift()
             if (!obj.optBoolean("available", false)) return null
             val versionCode = obj.optInt("version_code", 0)
             val downloadUrl = obj.optString("download_url")

@@ -824,6 +824,12 @@
     <string name="panel_sign_in_title">Sign in to your provider</string>
     <string name="panel_sign_in_body">Enter your login code, or an invitation code from a friend. Your configurations download automatically and stay in sync.</string>
     <string name="panel_welcome_title">Welcome to XeroBox</string>
+    <!-- Force update -->
+    <string name="force_update_title">Update required</string>
+    <string name="force_update_body">This version (%1$s) is no longer supported. Install version %2$s to keep using XeroBox.</string>
+    <string name="force_update_button">Update to %1$s</string>
+    <string name="force_update_retry">Try again: update to %1$s</string>
+    <string name="force_update_keep">The VPN stays off until the update is installed. Your account and settings are kept.</string>
     <string name="panel_login_or_invite_code">Login or invitation code</string>
     <string name="panel_account_id">Account ID</string>
     <string name="panel_your_login_code">Your login code</string>

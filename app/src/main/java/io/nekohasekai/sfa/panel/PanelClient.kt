@@ -18,6 +18,8 @@ object PanelClient {
     /** Panel API version this app speaks (panel/API.md, "Platforms and compatibility"). */
     const val API_VERSION = 1
 
+    private const val HTTP_UPGRADE_REQUIRED = 426
+
     private const val CONNECT_TIMEOUT_MS = 15_000
     private const val READ_TIMEOUT_MS = 15_000
 
@@ -40,6 +42,7 @@ object PanelClient {
             .put("platform", "android")
             .put("app_version", appVersion)
             .put("api_version", API_VERSION)
+        ForceUpdate.putVersion(body)
         return when (val result = request(serverUrl, "/api/v1/auth/login", null, body)) {
             is PanelResult.Success -> {
                 val token = result.value?.str("token").orEmpty()
@@ -222,6 +225,9 @@ object PanelClient {
                 }
             } else {
                 val error = runCatching { JSONObject(text) }.getOrNull()
+                if (code == HTTP_UPGRADE_REQUIRED && error?.str("error") == "update_required") {
+                    ForceUpdate.record(error.optJSONObject("update"))
+                }
                 PanelResult.ApiError(
                     httpCode = code,
                     code = error?.str("error").orEmpty().ifEmpty { "http_$code" },

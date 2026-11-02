@@ -31,6 +31,7 @@ object PanelStore {
     private const val KEY_LINKS = "links"
     private const val KEY_LOGIN_CODE = "login_code"
     private const val KEY_AUTO_CRASH_REPORTS = "auto_crash_reports"
+    private const val KEY_REQUIRED_UPDATE = "required_update"
 
     private const val MAX_SEEN_NOTICES = 200
 
@@ -55,6 +56,11 @@ object PanelStore {
     var autoCrashReports: Boolean
         get() = prefs.getBoolean(KEY_AUTO_CRASH_REPORTS, true)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_CRASH_REPORTS, value).apply()
+
+    /** A forced update the server asked for (ForceUpdate), as JSON. Kept across sign-outs. */
+    var requiredUpdate: String
+        get() = prefs.getString(KEY_REQUIRED_UPDATE, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_REQUIRED_UPDATE, value).commit().let { }
 
     /** Random per install, created once. Identifies this device's slot on the server. */
     val deviceId: String
