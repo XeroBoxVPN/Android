@@ -113,6 +113,8 @@ import io.nekohasekai.sfa.compose.component.ServiceStatusBar
 import io.nekohasekai.sfa.compose.component.SnackbarHost
 import io.nekohasekai.sfa.compose.component.UpdateAvailableDialog
 import io.nekohasekai.sfa.compose.screen.UpdateRequiredScreen
+import io.nekohasekai.sfa.compose.screen.welcome.GuestEndedScreen
+import io.nekohasekai.sfa.compose.screen.welcome.WelcomeScreen
 import io.nekohasekai.sfa.panel.ForceUpdate
 import io.nekohasekai.sfa.compose.component.UptimeText
 import io.nekohasekai.sfa.compose.model.Connection
@@ -250,8 +252,10 @@ class MainActivity :
             connection.reconnect()
 
             UpdateState.loadFromCache()
-            // A forced update is checked on every start, even with automatic checks off.
+            // A forced update is checked on every start, even with automatic checks off, and
+            // the account is refreshed, so a plan or trial that ended shows at once.
             lifecycleScope.launch(Dispatchers.IO) { ForceUpdate.refresh() }
+            if (PanelSync.isSignedIn) PanelSync.syncInBackground()
             if (Settings.checkUpdateEnabled) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
@@ -272,38 +276,13 @@ class MainActivity :
                     val panel by PanelSync.state.collectAsState()
                     val requiredUpdate by ForceUpdate.state.collectAsState()
                     val required = requiredUpdate
-                    if (required != null) {
-                        UpdateRequiredScreen(required)
-                    } else if (panel.signedIn) {
-                        App()
-                    } else {
-                        FirstLaunchSignIn(panel)
+                    when {
+                        required != null -> UpdateRequiredScreen(required)
+                        panel.signedIn && panel.account?.guestEnded == true -> GuestEndedScreen(panel)
+                        panel.signedIn -> App()
+                        else -> WelcomeScreen(panel)
                     }
                 }
-            }
-        }
-    }
-
-    @Composable
-    private fun FirstLaunchSignIn(panel: PanelState) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .systemBarsPadding()
-                .imePadding(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = 480.dp)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                XMark(modifier = Modifier.size(88.dp))
-                SignInCard(panel, title = stringResource(R.string.panel_welcome_title))
             }
         }
     }

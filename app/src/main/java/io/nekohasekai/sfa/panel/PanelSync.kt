@@ -136,28 +136,68 @@ object PanelSync {
         )
         when (result) {
             is PanelResult.Success -> {
-                mutex.withLock {
-                    PanelStore.serverUrl = server
-                    PanelStore.token = result.value.token
-                    // A new account from an invite gets its own code; otherwise the code typed is the
-                    // account's login code, unless it was an invitation code signing in again.
-                    PanelStore.loginCode = result.value.loginCode.ifEmpty {
-                        if (normalized.startsWith("INV")) "" else code.trim().uppercase()
-                    }
-                    PanelStore.saveSnapshot(result.value.account, PanelPolicy(), null)
-                    _state.value = loadState()
+                // A new account (invite, purchase code) gets its own code; otherwise the code typed is
+                // the account's login code, unless it was an invitation or purchase code signing in again.
+                val own = result.value.loginCode.ifEmpty {
+                    if (normalized.startsWith("INV") || normalized.startsWith("UPG")) "" else code.trim().uppercase()
                 }
-                // ADD-ON HOOK: sign-in with a login code.
-                result.value.account?.let { Extensions.onSignedIn(Extensions.account(it, _state.value.adsAllowed)) }
-                runCatching { PanelSyncWork.schedule(PanelStore.syncIntervalMinutes) }
-                    .onFailure { Log.e(TAG, "schedule sync", it) }
-                // A failed first sync is not a failed login: the account screen shows it.
-                syncNow()
+                signedIn(server, result.value, own)
                 null
             }
             is PanelResult.ApiError -> result.message
             is PanelResult.NetworkError -> "Can't reach the server: ${result.message}"
         }
+    }
+
+    /** Guest access: whether it is on and the plans to try. Null with the message when the server can't be reached. */
+    suspend fun guestOffer(): Pair<GuestOffer?, String?> = withContext(Dispatchers.IO) {
+        val server = builtInServerUrl
+        if (!validateServerUrl(server)) return@withContext null to "This build has no server address."
+        when (val result = PanelClient.guestPlans(server)) {
+            is PanelResult.Success -> result.value to null
+            is PanelResult.ApiError -> null to result.message
+            is PanelResult.NetworkError -> null to "Can't reach the server: ${result.message}"
+        }
+    }
+
+    /** Starts a guest trial of [policyId] and signs in to it. Returns null on success, or the message to show. */
+    suspend fun startGuest(policyId: String): String? = withContext(Dispatchers.IO) {
+        val server = builtInServerUrl
+        if (!validateServerUrl(server)) return@withContext "This build has no server address. Set XEROBOX_SERVER_URL and rebuild."
+        val result = PanelClient.guestStart(
+            serverUrl = server,
+            policyId = policyId,
+            deviceId = PanelStore.deviceId,
+            hardwareId = PanelStore.hardwareId,
+            deviceName = deviceName(),
+            appVersion = BuildConfig.VERSION_NAME,
+        )
+        when (result) {
+            is PanelResult.Success -> {
+                // Back into a running trial after a reinstall: no new code, keep a known one.
+                signedIn(server, result.value, result.value.loginCode.ifEmpty { PanelStore.loginCode })
+                null
+            }
+            is PanelResult.ApiError -> result.message
+            is PanelResult.NetworkError -> "Can't reach the server: ${result.message}"
+        }
+    }
+
+    /** Stores a new session and runs the first sync. */
+    private suspend fun signedIn(server: String, response: LoginResponse, loginCode: String) {
+        mutex.withLock {
+            PanelStore.serverUrl = server
+            PanelStore.token = response.token
+            PanelStore.loginCode = loginCode
+            PanelStore.saveSnapshot(response.account, PanelPolicy(), null)
+            _state.value = loadState()
+        }
+        // ADD-ON HOOK: sign-in with a login code.
+        response.account?.let { Extensions.onSignedIn(Extensions.account(it, _state.value.adsAllowed)) }
+        runCatching { PanelSyncWork.schedule(PanelStore.syncIntervalMinutes) }
+            .onFailure { Log.e(TAG, "schedule sync", it) }
+        // A failed first sync is not a failed login: the account screen shows it.
+        syncNow()
     }
 
     /** This account's invite codes, or the message to show. */

@@ -125,7 +125,12 @@ fun AccountScreen(navController: NavController) {
  * ([PanelSync.builtInServerUrl]) and never shown. Also used by the first-launch screen.
  */
 @Composable
-fun SignInCard(state: PanelState, title: String = stringResource(R.string.panel_sign_in_title)) {
+fun SignInCard(
+    state: PanelState,
+    title: String = stringResource(R.string.panel_sign_in_title),
+    body: String = stringResource(R.string.panel_sign_in_body),
+    label: String = stringResource(R.string.panel_login_or_invite_code),
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var code by rememberSaveable { mutableStateOf("") }
@@ -182,7 +187,7 @@ fun SignInCard(state: PanelState, title: String = stringResource(R.string.panel_
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                text = stringResource(R.string.panel_sign_in_body),
+                text = body,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -192,7 +197,7 @@ fun SignInCard(state: PanelState, title: String = stringResource(R.string.panel_
                     code = value.uppercase().filter { it.isLetterOrDigit() || it == '-' }.take(32)
                     error = null
                 },
-                label = { Text(stringResource(R.string.panel_login_or_invite_code)) },
+                label = { Text(label) },
                 placeholder = { Text(stringResource(R.string.panel_login_code_hint)) },
                 singleLine = true,
                 enabled = !busy,
@@ -232,10 +237,10 @@ fun SignInCard(state: PanelState, title: String = stringResource(R.string.panel_
     }
 }
 
-private const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
+internal const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
 
 /** Whether [serverUrl] is on the local network and Android 17+ still needs the user's consent for it. */
-private fun needsLocalNetworkPermission(context: Context, serverUrl: String): Boolean {
+internal fun needsLocalNetworkPermission(context: Context, serverUrl: String): Boolean {
     if (Build.VERSION.SDK_INT < 37) return false
     if (ContextCompat.checkSelfPermission(context, LOCAL_NETWORK_PERMISSION) == PackageManager.PERMISSION_GRANTED) return false
     val host = runCatching { URI(serverUrl).host }.getOrNull()?.trim('[', ']') ?: return false

@@ -824,6 +824,36 @@
     <string name="panel_sign_in_title">Sign in to your provider</string>
     <string name="panel_sign_in_body">Enter your login code, or an invitation code from a friend. Your configurations download automatically and stay in sync.</string>
     <string name="panel_welcome_title">Welcome to XeroBox</string>
+    <!-- Welcome: Enter Code / Continue as Guest -->
+    <string name="welcome_tagline">Private, fast internet with your own personal connection.</string>
+    <string name="welcome_enter_code">Enter Code</string>
+    <string name="welcome_enter_code_sub">Access code, invitation or login code</string>
+    <string name="welcome_guest">Continue as Guest</string>
+    <string name="welcome_guest_sub">Try a plan for free</string>
+    <string name="welcome_no_code">No code yet? Get one in our Telegram bot</string>
+    <string name="welcome_get_in_telegram">Get a code in Telegram</string>
+    <string name="welcome_code_title">Enter your code</string>
+    <string name="welcome_code_body">Enter the access code from our Telegram bot, an invitation code from a friend, or your own login code.</string>
+    <string name="welcome_code_label">Code</string>
+    <string name="welcome_back">Back</string>
+    <string name="guest_title">Try XeroBox free</string>
+    <string name="guest_body">Pick a plan to try. Each phone gets one free trial.</string>
+    <string name="guest_unavailable_title">Guest access is unavailable</string>
+    <string name="guest_trial_chip">Free trial</string>
+    <string name="guest_then_from">Afterwards from %1$s</string>
+    <string name="guest_try">Try %1$s</string>
+    <string name="guest_length">Access</string>
+    <string name="guest_data">Data</string>
+    <string name="guest_confirm_title">Your free trial of %1$s</string>
+    <string name="guest_confirm_body">You get %1$s of %2$s with %3$s of data. One free trial per phone: when it ends, get a plan in our Telegram bot and enter your code to keep going.</string>
+    <string name="guest_start">Start free trial</string>
+    <string name="guest_other_plan">Choose another plan</string>
+    <string name="guest_retry">Try again</string>
+    <string name="guest_ended_title">Your free trial has ended</string>
+    <string name="guest_ended_body">Get a plan in our Telegram bot. After paying you receive a code: enter it below and your account continues right away.</string>
+    <string name="guest_ended_code_label">Your code</string>
+    <string name="guest_ended_redeem">Use code</string>
+    <string name="guest_ended_sign_out">Sign out</string>
     <!-- Force update -->
     <string name="force_update_title">Update required</string>
     <string name="force_update_body">This version (%1$s) is no longer supported. Install version %2$s to keep using XeroBox.</string>

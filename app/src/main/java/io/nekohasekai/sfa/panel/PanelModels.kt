@@ -24,7 +24,12 @@ data class PanelAccount(
     val traffic: PanelTraffic? = null,
     /** The account's plan (Free, Premium...) and paid subscription; null on older servers. */
     val plan: PanelPlan? = null,
+    /** A guest trial ("Continue as guest"); once it has ended the app offers a code or Telegram. */
+    val guest: Boolean = false,
 ) {
+    /** A guest trial that has ended: the app shows only the "get a plan" screen. */
+    val guestEnded: Boolean get() = guest && status == "expired"
+
     val isActive: Boolean get() = status == STATUS_ACTIVE
 
     fun toJson(): JSONObject = JSONObject()
@@ -36,6 +41,7 @@ data class PanelAccount(
         .put("message", message)
         .put("traffic", traffic?.toJson())
         .put("plan", plan?.toJson())
+        .put("guest", guest)
 
     companion object {
         const val STATUS_ACTIVE = "active"
@@ -51,6 +57,7 @@ data class PanelAccount(
                 message = obj.str("message"),
                 traffic = PanelTraffic.fromJson(obj.optJSONObject("traffic")),
                 plan = PanelPlan.fromJson(obj.optJSONObject("plan")),
+                guest = obj.optBoolean("guest", false),
             )
         }
     }
@@ -239,6 +246,49 @@ data class RedeemResult(val result: String, val account: PanelAccount?)
 
 /** [loginCode] is set only when an invite code created a new account: the user needs it on other devices. */
 data class LoginResponse(val token: String, val account: PanelAccount?, val loginCode: String)
+
+/** A plan offered for a guest trial (GET /api/v1/guest/plans). */
+data class GuestPlan(
+    val id: String,
+    val name: String,
+    val description: String,
+    val color: String,
+    /** e.g. "1 day" and "1 GB". */
+    val length: String,
+    val data: String,
+    val features: List<String>,
+    /** The cheapest price afterwards, e.g. "$5.00 for 7 days"; empty when it isn't sold. */
+    val priceFrom: String,
+) {
+    companion object {
+        fun fromJson(obj: JSONObject): GuestPlan {
+            val feats = obj.optJSONArray("features")
+            return GuestPlan(
+                id = obj.str("id"),
+                name = obj.str("name"),
+                description = obj.str("description"),
+                color = obj.str("color"),
+                length = obj.str("length"),
+                data = obj.str("data"),
+                features = (0 until (feats?.length() ?: 0)).map { feats!!.optString(it) }.filter { it.isNotBlank() },
+                priceFrom = obj.str("price_from"),
+            )
+        }
+    }
+}
+
+/** Whether guest access is on, the plans to try, and where to get a code (Telegram). */
+data class GuestOffer(val enabled: Boolean, val message: String, val plans: List<GuestPlan>, val telegramUrl: String) {
+    companion object {
+        fun fromJson(obj: JSONObject?): GuestOffer {
+            obj ?: return GuestOffer(false, "", emptyList(), "")
+            val list = obj.optJSONArray("plans")
+            val plans = (0 until (list?.length() ?: 0)).mapNotNull { list!!.optJSONObject(it)?.let(GuestPlan::fromJson) }
+            val tg = obj.str("telegram_url").trim().takeIf { it.startsWith("https://") }.orEmpty()
+            return GuestOffer(obj.optBoolean("enabled", false) && plans.isNotEmpty(), obj.str("message"), plans, tg)
+        }
+    }
+}
 
 data class InviteCode(val code: String, val uses: Int, val maxUses: Int, val active: Boolean)
 

@@ -1,5 +1,6 @@
 package io.nekohasekai.sfa.panel
 
+import android.os.Build
 import io.nekohasekai.sfa.utils.HTTPClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -43,24 +44,58 @@ object PanelClient {
             .put("app_version", appVersion)
             .put("api_version", API_VERSION)
         ForceUpdate.putVersion(body)
-        return when (val result = request(serverUrl, "/api/v1/auth/login", null, body)) {
-            is PanelResult.Success -> {
-                val token = result.value?.str("token").orEmpty()
-                if (token.isEmpty()) {
-                    PanelResult.NetworkError("The server did not return a token.")
-                } else {
-                    PanelResult.Success(
-                        LoginResponse(
-                            token = token,
-                            account = PanelAccount.fromJson(result.value?.optJSONObject("account")),
-                            loginCode = result.value?.str("login_code").orEmpty(),
-                        ),
-                    )
-                }
-            }
+        return loginResult(request(serverUrl, "/api/v1/auth/login", null, body))
+    }
+
+    /** Guest access: whether it is on and the plans to try (GET /api/v1/guest/plans, no sign-in). */
+    suspend fun guestPlans(serverUrl: String): PanelResult<GuestOffer> =
+        when (val result = request(serverUrl, "/api/v1/guest/plans", null, null)) {
+            is PanelResult.Success -> PanelResult.Success(GuestOffer.fromJson(result.value))
             is PanelResult.ApiError -> result
             is PanelResult.NetworkError -> result
         }
+
+    /** Starts a guest trial of [policyId]; answers like a sign-in (POST /api/v1/guest/start). */
+    suspend fun guestStart(
+        serverUrl: String,
+        policyId: String,
+        deviceId: String,
+        hardwareId: String,
+        deviceName: String,
+        appVersion: String,
+    ): PanelResult<LoginResponse> {
+        val body = JSONObject()
+            .put("policy_id", policyId)
+            .put("device_id", deviceId)
+            .put("hw_id", hardwareId)
+            .put("drm_id", DeviceSignals.drmId)
+            .put("emulator", DeviceSignals.isEmulator)
+            .put("model", Build.MODEL.orEmpty())
+            .put("device_name", deviceName)
+            .put("platform", "android")
+            .put("app_version", appVersion)
+            .put("api_version", API_VERSION)
+        ForceUpdate.putVersion(body)
+        return loginResult(request(serverUrl, "/api/v1/guest/start", null, body))
+    }
+
+    private fun loginResult(result: PanelResult<JSONObject?>): PanelResult<LoginResponse> = when (result) {
+        is PanelResult.Success -> {
+            val token = result.value?.str("token").orEmpty()
+            if (token.isEmpty()) {
+                PanelResult.NetworkError("The server did not return a token.")
+            } else {
+                PanelResult.Success(
+                    LoginResponse(
+                        token = token,
+                        account = PanelAccount.fromJson(result.value?.optJSONObject("account")),
+                        loginCode = result.value?.str("login_code").orEmpty(),
+                    ),
+                )
+            }
+        }
+        is PanelResult.ApiError -> result
+        is PanelResult.NetworkError -> result
     }
 
     suspend fun sync(serverUrl: String, token: String, body: JSONObject): PanelResult<SyncResponse> =
